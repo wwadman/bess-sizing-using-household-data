@@ -1,0 +1,127 @@
+import pandas as pd
+import plotly.express as px
+from itertools import product
+from tibber_insights.data_loader import load_monthly_files
+from tibber_insights.billing import forecast_2027_bill
+from tibber_insights.simulation import (
+    run_battery_simulation,
+    strategy_arbitrage,
+    strategy_optimal_mpc
+)
+from tibber_insights.visualization import (
+    plot_battery_savings_surface,
+    plot_battery_behavior
+)
+
+PLOT = True
+SANITY_CHECK = True
+
+def main():
+    pd.set_option('display.max_rows', 10)
+    pd.set_option('display.max_columns', 10)
+
+    # -- Load data -----------------------------------------------------------------
+    df = load_monthly_files("csv/data-*.csv")
+    df.to_csv("tibber_all_months_merged.csv", index=False)
+
+    if PLOT:
+        fig = px.line(df, x="hour_starts_at", y="net_kwh")
+        fig.show()
+
+    # -- 2027 bill forecast --------------------------------------------------------
+    forecast = forecast_2027_bill(df)
+
+    # -- Battery simulation --------------------------------------------------------
+    capacities = [0, 20]   # [2, 5, 10, 20]
+    rates = [2.4]       # [0.8, 1.2, 1.5, 2.4]
+
+    baseline_bill = forecast['net_bill_2027_eur']
+    df['date'] = df['hour_starts_at'].dt.date
+    recent_days = sorted(df['date'].unique())[-366:-1]
+    profile_df = df[df['date'].isin(recent_days)].copy()
+
+    strategies = {
+        "arbitrage": strategy_arbitrage,
+        "optimal_mpc": strategy_optimal_mpc,
+    }
+
+    sim_results = []
+
+    for capacity, rate in product(capacities, rates):
+        for strategy_name, strategy_fn in strategies.items():
+            savings, sim_df = run_battery_simulation(
+                profile_df=profile_df,
+                capacity_kwh=capacity,
+                rate_kw=rate,
+                strategy_fn=strategy_fn,
+            )
+
+            if SANITY_CHECK and capacity == 20 and strategy_name == "optimal_mpc":
+                print(f"\n--- Generating sanity check plot for {strategy_name} (20kWh) ---")
+                plot_battery_behavior(sim_df, days=3)
+
+            sim_results.append({
+                'strategy': strategy_name,
+                'capacity_kwh': capacity,
+                'rate_kw': rate,
+                'annual_savings_eur': savings,
+                'net_bill_eur': baseline_bill - savings,
+                'savings_pct': savings / baseline_bill * 100,
+            })
+
+    results_df = pd.DataFrame(sim_results)
+
+    print("\n" + "╔" + "═" * 88 + "╗")
+    print(f"║ {'BATTERY SIMULATION RESULTS (2027)':^86} ║")
+    print("╠" + "═" * 88 + "╣")
+
+    display_df = results_df.sort_values(
+        ['strategy', 'annual_savings_eur'],
+        ascending=[True, False],
+    )[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
+    
+    # Rename columns for prettier display
+    display_df.columns = ['Strategy', 'Cap (kWh)', 'Rate (kW)', 'Savings (€)', 'Net Bill (€)', 'Savings %']
+    
+    sim_table = display_df.to_string(index=False, justify='center', formatters={
+        'Savings (€)': '{:,.2f}'.format,
+        'Net Bill (€)': '{:,.2f}'.format,
+        'Savings %': '{:.1f}%'.format,
+        'Cap (kWh)': '{:.0f}'.format,
+        'Rate (kW)': '{:.1f}'.format
+    })
+    for line in sim_table.split('\n'):
+        print(f"║ {line:^86} ║")
+    print("╚" + "═" * 88 + "╝")
+
+    if not results_df.empty:
+        best_by_strategy = (
+            results_df.loc[results_df.groupby('strategy')['annual_savings_eur'].idxmax()]
+            .sort_values('annual_savings_eur', ascending=False)
+        )
+
+        print("\n" + "╔" + "═" * 88 + "╗")
+        print(f"║ {'🏆 BEST CONFIGURATION PER STRATEGY':^86}║")
+        print("╠" + "═" * 88 + "╣")
+        
+        best_display = best_by_strategy[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'savings_pct', 'net_bill_eur']]
+        best_display.columns = ['Strategy', 'Cap (kWh)', 'Rate (kW)', 'Savings (€)', 'Savings %', 'Net Bill (€)']
+        
+        best_table = best_display.to_string(index=False, justify='center', formatters={
+            'Savings (€)': '{:,.2f}'.format,
+            'Net Bill (€)': '{:,.2f}'.format,
+            'Savings %': '{:.1f}%'.format,
+            'Cap (kWh)': '{:.0f}'.format,
+            'Rate (kW)': '{:.1f}'.format
+        })
+        for line in best_table.split('\n'):
+            print(f"║ {line:^86} ║")
+        print("╚" + "═" * 88 + "╝")
+
+        # -- Surface plots per strategy ------------------------------------------------
+        if PLOT:
+            for strategy_name in strategies.keys():
+                plot_battery_savings_surface(results_df, strategy_name, rates, capacities)
+
+if __name__ == "__main__":
+    main()
