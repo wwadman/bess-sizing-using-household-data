@@ -40,6 +40,21 @@ def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
 
         # Savings calculation: discharging from battery avoids buying at the current gross price.
         current_gross_buy_price = calculate_gross_buy_price(row['consumption_unit_price_eur'])
+        current_gross_sell_price = calculate_gross_sell_price(row['production_unit_price_eur'])
+        
+        # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
+        if row['net_kwh'] > 0:
+            cost_no_batt = row['net_kwh'] * current_gross_buy_price
+        else:
+            cost_no_batt = row['net_kwh'] * current_gross_sell_price
+            
+        # Cost with battery: (net_kwh + charge - discharge) * relevant_price
+        new_net_kwh = row['net_kwh'] + charge_kwh - discharge_kwh
+        if new_net_kwh > 0:
+            cost_with_batt = new_net_kwh * current_gross_buy_price
+        else:
+            cost_with_batt = new_net_kwh * current_gross_sell_price
+
         total_savings += discharge_kwh * current_gross_buy_price
 
         simulation_logs.append({
@@ -48,7 +63,9 @@ def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
             'charge_kwh': charge_kwh,
             'discharge_kwh': discharge_kwh,
             'net_kwh': row['net_kwh'],
-            'consumption_unit_price_eur': row['consumption_unit_price_eur']
+            'consumption_unit_price_eur': row['consumption_unit_price_eur'],
+            'cost_no_batt_eur': cost_no_batt,
+            'cost_with_batt_eur': cost_with_batt
         })
 
     return total_savings, pd.DataFrame(simulation_logs)

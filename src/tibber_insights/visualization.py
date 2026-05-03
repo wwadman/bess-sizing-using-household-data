@@ -15,11 +15,16 @@ def plot_battery_behavior(sim_df, days=3):
         df = df[df['hour_starts_at'] >= start_date]
 
     fig = make_subplots(
-        rows=3, cols=1,
+        rows=4, cols=1,
         shared_xaxes=True,
         vertical_spacing=0.05,
-        subplot_titles=("Battery State of Charge (SOC)", "Power Flows (kW)", "Market Price (€/kWh)"),
-        row_heights=[0.4, 0.4, 0.2]
+        subplot_titles=(
+            "Battery State of Charge (SOC)", 
+            "Power Flows (kW)", 
+            "Market Price (€/kWh)",
+            "Hourly Cash Flow (€) - [Positive=Cost, Negative=Revenue]"
+        ),
+        row_heights=[0.3, 0.3, 0.2, 0.2]
     )
 
     # Subplot 1: SOC
@@ -48,8 +53,18 @@ def plot_battery_behavior(sim_df, days=3):
         row=3, col=1
     )
 
+    # Subplot 4: Costs
+    fig.add_trace(
+        go.Bar(x=df['hour_starts_at'], y=df['cost_no_batt_eur'], name="Cost (No Battery)", marker_color='rgba(200, 200, 200, 0.5)'),
+        row=4, col=1
+    )
+    fig.add_trace(
+        go.Bar(x=df['hour_starts_at'], y=df['cost_with_batt_eur'], name="Cost (With Battery)", marker_color='indigo'),
+        row=4, col=1
+    )
+
     fig.update_layout(
-        height=800,
+        height=1000,
         title_text="Battery Simulation Sanity Check",
         showlegend=True,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
@@ -58,6 +73,7 @@ def plot_battery_behavior(sim_df, days=3):
     fig.update_yaxes(title_text="kWh", row=1, col=1)
     fig.update_yaxes(title_text="kW", row=2, col=1)
     fig.update_yaxes(title_text="€/kWh", row=3, col=1)
+    fig.update_yaxes(title_text="€", row=4, col=1)
 
     fig.show()
     fig.write_image("battery_sanity_check.png")

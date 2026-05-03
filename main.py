@@ -13,7 +13,7 @@ from tibber_insights.visualization import (
     plot_battery_behavior
 )
 
-PLOT = True
+PLOT = False
 SANITY_CHECK = True
 
 def main():
