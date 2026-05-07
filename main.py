@@ -22,10 +22,11 @@ def main():
 
     # -- Load data -----------------------------------------------------------------
     df = load_monthly_files("csv/data-*.csv")
+    df = df.drop_duplicates(subset=['hour_starts_at']).sort_values('hour_starts_at')
     df.to_csv("tibber_all_months_merged.csv", index=False)
 
     if PLOT:
-        fig = px.line(df, x="hour_starts_at", y="net_kwh")
+        fig = px.line(df, x="hour_starts_at", y="Net Household (kW)")
         fig.show()
 
     # -- 2027 bill forecast --------------------------------------------------------

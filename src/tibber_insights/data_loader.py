@@ -34,6 +34,6 @@ def load_monthly_files(pattern="csv/data-*.csv"):
     ) == len(df)
     print("All hours covered:", all_covered)
 
-    df['net_kwh'] = df['consumption_kwh'] - df['production_kwh']
+    df['Net Household (kW)'] = df['consumption_kwh'] - df['production_kwh']
 
     return df
