@@ -2,6 +2,10 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from .constants import (
+    net_household, battery_charge, battery_discharge, 
+    soc, price, cost_no_battery, cost_with_battery
+)
 
 def plot_battery_behavior(sim_df, days=3):
     """
@@ -15,26 +19,28 @@ def plot_battery_behavior(sim_df, days=3):
         df = df[df['hour_starts_at'] >= start_date]
 
     fig = make_subplots(
-        rows=4, cols=1,
+        rows=5, cols=1,
         shared_xaxes=True,
         vertical_spacing=0.05,
         subplot_titles=(
             "Battery State of Charge (SOC)", 
             "Power Flows (kW)", 
             "Market Price (€/kWh)",
-            "Cost Comparison (€) - Line Chart"
+            "Cost Comparison (€) - Line Chart",
+            "Cost Comparison (€) - Bar Chart"
         ),
-        row_heights=[0.2, 0.2, 0.15, 0.2, 0.25]
+        row_heights=[0.18, 0.18, 0.14, 0.18, 0.18]
     )
 
     # Subplot 1: SOC
     fig.add_trace(
         go.Scatter(
             x=df['hour_starts_at'], 
-            y=df['soc_kwh'], 
-            name="SOC (kWh)", 
+            y=df[soc], 
+            name=soc, 
             fill='tozeroy', 
             line=dict(color='royalblue'),
+            hovertemplate=f"{soc}: %{{y:.2f}}<extra></extra>",
             legend='legend'
         ),
         row=1, col=1
@@ -44,29 +50,34 @@ def plot_battery_behavior(sim_df, days=3):
     fig.add_trace(
         go.Scatter(
             x=df['hour_starts_at'], 
-            y=df['Net Household (kW)'], 
-            name="Net Household (kW)", 
+            y=df[net_household], 
+            name=net_household, 
             line=dict(color='gray', dash='dash'),
+            hovertemplate=f"{net_household}: %{{y:.2f}}<extra></extra>",
             legend='legend2'
         ),
         row=2, col=1
     )
+    
     fig.add_trace(
         go.Bar(
             x=df['hour_starts_at'], 
-            y=df['Battery Charge (kW)'], 
-            name="Battery Charge (kW)", 
+            y=df[battery_charge], 
+            name=battery_charge, 
             marker_color='forestgreen',
+            hovertemplate=f"{battery_charge}: %{{y:.2f}}<extra></extra>",
             legend='legend2'
         ),
         row=2, col=1
     )
+    
     fig.add_trace(
         go.Bar(
             x=df['hour_starts_at'], 
-            y=-df['Battery Discharge (kW)'], 
-            name="Battery Discharge (kW)", 
+            y=-df[battery_discharge], 
+            name=battery_discharge, 
             marker_color='firebrick',
+            hovertemplate=f"{battery_discharge}: %{{y:.2f}}<extra></extra>",
             legend='legend2'
         ),
         row=2, col=1
@@ -76,9 +87,10 @@ def plot_battery_behavior(sim_df, days=3):
     fig.add_trace(
         go.Scatter(
             x=df['hour_starts_at'], 
-            y=df['consumption_unit_price_eur'], 
-            name="Price (€/kWh)", 
+            y=df[price], 
+            name=price, 
             line=dict(color='orange'),
+            hovertemplate=f"{price}: €%{{y:.3f}}<extra></extra>",
             legend='legend3'
         ),
         row=3, col=1
@@ -88,35 +100,62 @@ def plot_battery_behavior(sim_df, days=3):
     fig.add_trace(
         go.Scatter(
             x=df['hour_starts_at'], 
-            y=df['cost_no_batt_eur'], 
-            name="Cost (No Battery)", 
+            y=df[cost_no_battery], 
+            name=cost_no_battery, 
             line=dict(color='gray', dash='dash'),
-            hovertemplate="Baseline Cost: €%{y:.3f}<extra></extra>",
+            hovertemplate=f"{cost_no_battery}: €%{{y:.3f}}<extra></extra>",
             legend='legend4'
         ),
         row=4, col=1
     )
+    
     fig.add_trace(
         go.Scatter(
             x=df['hour_starts_at'], 
-            y=df['cost_with_batt_eur'], 
-            name="Cost (With Battery)", 
+            y=df[cost_with_battery], 
+            name=cost_with_battery, 
             line=dict(color='indigo'),
-            hovertemplate="Cost with Battery: €%{y:.3f}",
+            hovertemplate=f"{cost_with_battery}: €%{{y:.3f}}<extra></extra>",
             legend='legend4'
         ),
         row=4, col=1
     )
 
+    # Subplot 5: Cost Comparison (Bar)
+    fig.add_trace(
+        go.Bar(
+            x=df['hour_starts_at'], 
+            y=df[cost_no_battery], 
+            name=cost_no_battery, 
+            marker_color='rgba(200, 200, 200, 0.5)',
+            hovertemplate=f"{cost_no_battery}: €%{{y:.3f}}<extra></extra>",
+            legend='legend5',
+            offsetgroup=1
+        ),
+        row=5, col=1
+    )
+    fig.add_trace(
+        go.Bar(
+            x=df['hour_starts_at'], 
+            y=df[cost_with_battery], 
+            name=cost_with_battery, 
+            marker_color='indigo',
+            hovertemplate=f"{cost_with_battery}: €%{{y:.3f}}<extra></extra>",
+            legend='legend5',
+            offsetgroup=2
+        ),
+        row=5, col=1
+    )
+
     fig.update_layout(
-        height=1200,
+        height=1400,
         title_text="Battery Simulation Sanity Check",
         showlegend=True,
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        legend2=dict(orientation="h", yanchor="bottom", y=0.80, xanchor="right", x=1),
-        legend3=dict(orientation="h", yanchor="bottom", y=0.59, xanchor="right", x=1),
-        legend4=dict(orientation="h", yanchor="bottom", y=0.42, xanchor="right", x=1),
-        # legend5=dict(orientation="h", yanchor="bottom", y=0.21, xanchor="right", x=1),
+        legend2=dict(orientation="h", yanchor="bottom", y=0.81, xanchor="right", x=1),
+        legend3=dict(orientation="h", yanchor="bottom", y=0.62, xanchor="right", x=1),
+        legend4=dict(orientation="h", yanchor="bottom", y=0.45, xanchor="right", x=1),
+        legend5=dict(orientation="h", yanchor="bottom", y=0.23, xanchor="right", x=1),
         barmode='relative'
     )
 
@@ -124,7 +163,7 @@ def plot_battery_behavior(sim_df, days=3):
     fig.update_yaxes(title_text="kW", row=2, col=1)
     fig.update_yaxes(title_text="€/kWh", row=3, col=1)
     fig.update_yaxes(title_text="€", row=4, col=1)
-    # fig.update_yaxes(title_text="€", row=5, col=1)
+    fig.update_yaxes(title_text="€", row=5, col=1)
 
     fig.show()
     fig.write_image("battery_sanity_check.png")

@@ -1,6 +1,7 @@
 import glob
 import os
 import pandas as pd
+from .constants import net_household
 
 def load_monthly_files(pattern="csv/data-*.csv"):
     files = sorted(glob.glob(pattern))
@@ -34,6 +35,6 @@ def load_monthly_files(pattern="csv/data-*.csv"):
     ) == len(df)
     print("All hours covered:", all_covered)
 
-    df['Net Household (kW)'] = df['consumption_kwh'] - df['production_kwh']
+    df[net_household] = df['consumption_kwh'] - df['production_kwh']
 
     return df

@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
-from .constants import EFFICIENCY
+from .constants import (
+    EFFICIENCY, net_household, battery_charge, battery_discharge, 
+    soc, cost_no_battery, cost_with_battery, price
+)
 from .billing import calculate_gross_buy_price, calculate_gross_sell_price
 
 def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
@@ -14,7 +17,7 @@ def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
 
     df = df.merge(hourly_stats, on='hour', how='left')
 
-    soc = 0.0
+    current_soc = 0.0
     total_savings = 0.0
     
     simulation_logs = []
@@ -26,30 +29,30 @@ def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
         charge_kwh, discharge_kwh = strategy_fn(
             row=row,
             future_df=future_df,
-            soc=soc,
+            soc=current_soc,
             capacity_kwh=capacity_kwh,
             rate_kw=rate_kw,
             hourly_stats=hourly_stats,
         )
 
-        charge_kwh = max(0, min(charge_kwh, rate_kw, capacity_kwh - soc))
-        soc += charge_kwh * EFFICIENCY
+        charge_kwh = max(0, min(charge_kwh, rate_kw, capacity_kwh - current_soc))
+        current_soc += charge_kwh * EFFICIENCY
 
-        discharge_kwh = max(0, min(discharge_kwh, rate_kw, soc * EFFICIENCY))
-        soc -= discharge_kwh / EFFICIENCY
+        discharge_kwh = max(0, min(discharge_kwh, rate_kw, current_soc * EFFICIENCY))
+        current_soc -= discharge_kwh / EFFICIENCY
 
         # Savings calculation: discharging from battery avoids buying at the current gross price.
         current_gross_buy_price = calculate_gross_buy_price(row['consumption_unit_price_eur'])
         current_gross_sell_price = calculate_gross_sell_price(row['production_unit_price_eur'])
         
         # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
-        if row['Net Household (kW)'] > 0:
-            cost_no_batt = row['Net Household (kW)'] * current_gross_buy_price
+        if row[net_household] > 0:
+            cost_no_batt = row[net_household] * current_gross_buy_price
         else:
-            cost_no_batt = row['Net Household (kW)'] * current_gross_sell_price
+            cost_no_batt = row[net_household] * current_gross_sell_price
             
         # Cost with battery: (net_kwh + charge - discharge) * relevant_price
-        new_net_kwh = row['Net Household (kW)'] + charge_kwh - discharge_kwh
+        new_net_kwh = row[net_household] + charge_kwh - discharge_kwh
         if new_net_kwh > 0:
             cost_with_batt = new_net_kwh * current_gross_buy_price
         else:
@@ -59,13 +62,13 @@ def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
 
         simulation_logs.append({
             'hour_starts_at': row['hour_starts_at'],
-            'soc_kwh': soc,
-            'Battery Charge (kW)': charge_kwh,
-            'Battery Discharge (kW)': discharge_kwh,
-            'Net Household (kW)': row['Net Household (kW)'],
-            'consumption_unit_price_eur': row['consumption_unit_price_eur'],
-            'cost_no_batt_eur': cost_no_batt,
-            'cost_with_batt_eur': cost_with_batt
+            soc: current_soc,
+            battery_charge: charge_kwh,
+            battery_discharge: discharge_kwh,
+            net_household: row[net_household],
+            price: row['consumption_unit_price_eur'],
+            cost_no_battery: cost_no_batt,
+            cost_with_battery: cost_with_batt
         })
 
     return total_savings, pd.DataFrame(simulation_logs)

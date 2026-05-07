@@ -2,6 +2,7 @@ import pandas as pd
 import plotly.express as px
 from itertools import product
 from tibber_insights.data_loader import load_monthly_files
+from tibber_insights.constants import net_household
 from tibber_insights.billing import forecast_2027_bill
 from tibber_insights.simulation import (
     run_battery_simulation,
@@ -26,7 +27,7 @@ def main():
     df.to_csv("tibber_all_months_merged.csv", index=False)
 
     if PLOT:
-        fig = px.line(df, x="hour_starts_at", y="Net Household (kW)")
+        fig = px.line(df, x="hour_starts_at", y=net_household)
         fig.show()
 
     # -- 2027 bill forecast --------------------------------------------------------
