@@ -11,11 +11,11 @@ def plot_battery_behavior(sim_df, days=3):
     Plots battery behavior (SOC, Charge/Discharge) alongside net consumption and prices.
     Zooms in on the last `days` days by default.
     """
-    df = sim_df.copy()
+    df3days = sim_df.copy()
     if days:
-        end_date = df['hour_starts_at'].max()
+        end_date = df3days['hour_starts_at'].max()
         start_date = end_date - pd.Timedelta(days=days)
-        df = df[df['hour_starts_at'] >= start_date]
+        df3days = df3days[df3days['hour_starts_at'] >= start_date]
 
     fig = make_subplots(
         rows=4, cols=1,
@@ -33,8 +33,8 @@ def plot_battery_behavior(sim_df, days=3):
     # Subplot 1: SOC
     fig.add_trace(
         go.Scatter(
-            x=df['hour_starts_at'], 
-            y=df[soc], 
+            x=df3days['hour_starts_at'],
+            y=df3days[soc],
             name=soc, 
             fill='tozeroy', 
             line=dict(color='royalblue'),
@@ -47,8 +47,8 @@ def plot_battery_behavior(sim_df, days=3):
     # Subplot 2: Power Flows
     fig.add_trace(
         go.Scatter(
-            x=df['hour_starts_at'], 
-            y=df[net_household], 
+            x=df3days['hour_starts_at'],
+            y=df3days[net_household],
             name=net_household, 
             line=dict(color='gray', dash='dash'),
             hovertemplate=f"{net_household}: %{{y:.2f}}<extra></extra>",
@@ -59,8 +59,8 @@ def plot_battery_behavior(sim_df, days=3):
     
     fig.add_trace(
         go.Bar(
-            x=df['hour_starts_at'], 
-            y=df[battery_charge], 
+            x=df3days['hour_starts_at'],
+            y=df3days[battery_charge],
             name=battery_charge, 
             marker_color='forestgreen',
             hovertemplate=f"{battery_charge}: %{{y:.2f}}<extra></extra>",
@@ -71,8 +71,8 @@ def plot_battery_behavior(sim_df, days=3):
     
     fig.add_trace(
         go.Bar(
-            x=df['hour_starts_at'], 
-            y=-df[battery_discharge], 
+            x=df3days['hour_starts_at'],
+            y=-df3days[battery_discharge],
             name=battery_discharge, 
             marker_color='firebrick',
             hovertemplate=f"{battery_discharge}: %{{y:.2f}}<extra></extra>",
@@ -84,8 +84,8 @@ def plot_battery_behavior(sim_df, days=3):
     # Subplot 3: Prices
     fig.add_trace(
         go.Scatter(
-            x=df['hour_starts_at'], 
-            y=df[price], 
+            x=df3days['hour_starts_at'],
+            y=df3days[price],
             name=price, 
             line=dict(color='orange'),
             hovertemplate=f"{price}: €%{{y:.3f}}<extra></extra>",
@@ -97,8 +97,8 @@ def plot_battery_behavior(sim_df, days=3):
     # Subplot 4: Cost Comparison (Line)
     fig.add_trace(
         go.Scatter(
-            x=df['hour_starts_at'], 
-            y=df[cost_no_battery], 
+            x=df3days['hour_starts_at'],
+            y=df3days[cost_no_battery],
             name=cost_no_battery, 
             line=dict(color='gray', dash='dash'),
             hovertemplate=f"{cost_no_battery}: €%{{y:.3f}}<extra></extra>",
@@ -109,8 +109,8 @@ def plot_battery_behavior(sim_df, days=3):
     
     fig.add_trace(
         go.Scatter(
-            x=df['hour_starts_at'], 
-            y=df[cost_with_battery], 
+            x=df3days['hour_starts_at'],
+            y=df3days[cost_with_battery],
             name=cost_with_battery, 
             line=dict(color='indigo'),
             hovertemplate=f"{cost_with_battery}: €%{{y:.3f}}<extra></extra>",
