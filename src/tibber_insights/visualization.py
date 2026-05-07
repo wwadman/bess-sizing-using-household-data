@@ -26,8 +26,7 @@ def plot_battery_behavior(sim_df, days=3):
             "Battery State of Charge (SOC)", 
             "Power Flows (kW)", 
             "Market Price (€/kWh)",
-            "Cost Comparison (€) - Line Chart",
-            "Cost Comparison (€) - Bar Chart"
+            "Cost Comparison (€) - Line Chart"
         ),
         row_heights=[0.18, 0.18, 0.14, 0.18, 0.18]
     )
@@ -121,32 +120,6 @@ def plot_battery_behavior(sim_df, days=3):
         row=4, col=1
     )
 
-    # Subplot 5: Cost Comparison (Bar)
-    fig.add_trace(
-        go.Bar(
-            x=df['hour_starts_at'], 
-            y=df[cost_no_battery], 
-            name=cost_no_battery, 
-            marker_color='rgba(200, 200, 200, 0.5)',
-            hovertemplate=f"{cost_no_battery}: €%{{y:.3f}}<extra></extra>",
-            legend='legend5',
-            offsetgroup=1
-        ),
-        row=5, col=1
-    )
-    fig.add_trace(
-        go.Bar(
-            x=df['hour_starts_at'], 
-            y=df[cost_with_battery], 
-            name=cost_with_battery, 
-            marker_color='indigo',
-            hovertemplate=f"{cost_with_battery}: €%{{y:.3f}}<extra></extra>",
-            legend='legend5',
-            offsetgroup=2
-        ),
-        row=5, col=1
-    )
-
     fig.update_layout(
         height=1400,
         title_text="Battery Simulation Sanity Check",
@@ -155,7 +128,6 @@ def plot_battery_behavior(sim_df, days=3):
         legend2=dict(orientation="h", yanchor="bottom", y=0.81, xanchor="right", x=1),
         legend3=dict(orientation="h", yanchor="bottom", y=0.62, xanchor="right", x=1),
         legend4=dict(orientation="h", yanchor="bottom", y=0.45, xanchor="right", x=1),
-        legend5=dict(orientation="h", yanchor="bottom", y=0.23, xanchor="right", x=1),
         barmode='relative'
     )
 
@@ -163,7 +135,6 @@ def plot_battery_behavior(sim_df, days=3):
     fig.update_yaxes(title_text="kW", row=2, col=1)
     fig.update_yaxes(title_text="€/kWh", row=3, col=1)
     fig.update_yaxes(title_text="€", row=4, col=1)
-    fig.update_yaxes(title_text="€", row=5, col=1)
 
     fig.show()
     fig.write_image("battery_sanity_check.png")
