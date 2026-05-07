@@ -28,6 +28,17 @@ def main():
 
     if PLOT:
         fig = px.line(df, x="hour_starts_at", y=net_household)
+        fig.update_traces(hovertemplate=f"Time: %{{x|%H:%M}}<br>{net_household}: %{{y:.2f}}<extra></extra>")
+        fig.update_layout(hovermode='x')
+        fig.update_xaxes(
+            showspikes=True,
+            spikemode='across',
+            spikesnap='data',
+            showline=True,
+            spikecolor="lightgrey",
+            spikethickness=1,
+            spikedash='solid'
+        )
         fig.show()
 
     # -- 2027 bill forecast --------------------------------------------------------

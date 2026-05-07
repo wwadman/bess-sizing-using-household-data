@@ -19,7 +19,7 @@ def plot_battery_behavior(sim_df, days=3):
         df = df[df['hour_starts_at'] >= start_date]
 
     fig = make_subplots(
-        rows=5, cols=1,
+        rows=4, cols=1,
         shared_xaxes=True,
         vertical_spacing=0.05,
         subplot_titles=(
@@ -28,7 +28,7 @@ def plot_battery_behavior(sim_df, days=3):
             "Market Price (€/kWh)",
             "Cost Comparison (€) - Line Chart"
         ),
-        row_heights=[0.18, 0.18, 0.14, 0.18, 0.18]
+        row_heights=[0.18, 0.18, 0.14, 0.18]
     )
 
     # Subplot 1: SOC
@@ -39,7 +39,7 @@ def plot_battery_behavior(sim_df, days=3):
             name=soc, 
             fill='tozeroy', 
             line=dict(color='royalblue'),
-            hovertemplate=f"{soc}: %{{y:.2f}}<extra></extra>",
+            hovertemplate=f"Time: %{{x|%H:%M}}<br>{soc}: %{{y:.2f}}<extra></extra>",
             legend='legend'
         ),
         row=1, col=1
@@ -52,7 +52,7 @@ def plot_battery_behavior(sim_df, days=3):
             y=df[net_household], 
             name=net_household, 
             line=dict(color='gray', dash='dash'),
-            hovertemplate=f"{net_household}: %{{y:.2f}}<extra></extra>",
+            hovertemplate=f"Time: %{{x|%H:%M}}<br>{net_household}: %{{y:.2f}}<extra></extra>",
             legend='legend2'
         ),
         row=2, col=1
@@ -64,7 +64,7 @@ def plot_battery_behavior(sim_df, days=3):
             y=df[battery_charge], 
             name=battery_charge, 
             marker_color='forestgreen',
-            hovertemplate=f"{battery_charge}: %{{y:.2f}}<extra></extra>",
+            hovertemplate=f"Time: %{{x|%H:%M}}<br>{battery_charge}: %{{y:.2f}}<extra></extra>",
             legend='legend2'
         ),
         row=2, col=1
@@ -76,7 +76,7 @@ def plot_battery_behavior(sim_df, days=3):
             y=-df[battery_discharge], 
             name=battery_discharge, 
             marker_color='firebrick',
-            hovertemplate=f"{battery_discharge}: %{{y:.2f}}<extra></extra>",
+            hovertemplate=f"Time: %{{x|%H:%M}}<br>{battery_discharge}: %{{y:.2f}}<extra></extra>",
             legend='legend2'
         ),
         row=2, col=1
@@ -89,7 +89,7 @@ def plot_battery_behavior(sim_df, days=3):
             y=df[price], 
             name=price, 
             line=dict(color='orange'),
-            hovertemplate=f"{price}: €%{{y:.3f}}<extra></extra>",
+            hovertemplate=f"Time: %{{x|%H:%M}}<br>{price}: €%{{y:.3f}}<extra></extra>",
             legend='legend3'
         ),
         row=3, col=1
@@ -102,7 +102,7 @@ def plot_battery_behavior(sim_df, days=3):
             y=df[cost_no_battery], 
             name=cost_no_battery, 
             line=dict(color='gray', dash='dash'),
-            hovertemplate=f"{cost_no_battery}: €%{{y:.3f}}<extra></extra>",
+            hovertemplate=f"Time: %{{x|%H:%M}}<br>{cost_no_battery}: €%{{y:.3f}}<extra></extra>",
             legend='legend4'
         ),
         row=4, col=1
@@ -114,7 +114,7 @@ def plot_battery_behavior(sim_df, days=3):
             y=df[cost_with_battery], 
             name=cost_with_battery, 
             line=dict(color='indigo'),
-            hovertemplate=f"{cost_with_battery}: €%{{y:.3f}}<extra></extra>",
+            hovertemplate=f"Time: %{{x|%H:%M}}<br>{cost_with_battery}: €%{{y:.3f}}<extra></extra>",
             legend='legend4'
         ),
         row=4, col=1
@@ -128,7 +128,18 @@ def plot_battery_behavior(sim_df, days=3):
         legend2=dict(orientation="h", yanchor="bottom", y=0.81, xanchor="right", x=1),
         legend3=dict(orientation="h", yanchor="bottom", y=0.62, xanchor="right", x=1),
         legend4=dict(orientation="h", yanchor="bottom", y=0.45, xanchor="right", x=1),
-        barmode='relative'
+        barmode='relative',
+        hovermode='x'
+    )
+
+    fig.update_xaxes(
+        showspikes=True,
+        spikemode='across',
+        spikesnap='data',
+        showline=True,
+        spikecolor="lightgrey",
+        spikethickness=1,
+        spikedash='solid'
     )
 
     fig.update_yaxes(title_text="kWh", row=1, col=1)
