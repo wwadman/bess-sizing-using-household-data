@@ -3,7 +3,7 @@ import plotly.express as px
 from itertools import product
 from tibber_insights.data_loader import load_monthly_files
 from tibber_insights.constants import net_household
-from tibber_insights.billing import forecast_2027_bill
+from tibber_insights.billing import forecast_2027_bill, calculate_net_price
 from tibber_insights.simulation import (
     run_battery_simulation,
     strategy_arbitrage,
@@ -18,12 +18,25 @@ PLOT = False
 SANITY_CHECK = True
 
 def main():
-    pd.set_option('display.max_rows', 10)
-    pd.set_option('display.max_columns', 10)
+    pd.set_option('display.max_rows', 15)
+    pd.set_option('display.max_columns', 20)
+
+    # set max number chars per row when pandas is printing
+    pd.set_option('display.max_colwidth', 100)
 
     # -- Load data -----------------------------------------------------------------
     df = load_monthly_files("csv/data-*.csv")
     df = df.drop_duplicates(subset=['hour_starts_at']).sort_values('hour_starts_at')
+
+    # Clean unit prices
+    # Until start of 2026 Tibber df.consumption_unit_price_eur == df.production_unit_price_eur
+    # From start of 2026 Tibber df.consumption_unit_price_eur == df.production_unit_price_eur + INKOOPVERGOEDING
+    # This is super confusing, since we want to mimic 2027 onwards, which has IV for consumption only
+    # So we will use only the production_unit_price_eur and add the IV (and EB and BTW) to obtain the consumption_unit_price_eur_net
+    df['unit_price'] = df.production_unit_price_eur
+    df['net_buy_price'] = calculate_net_price(df['unit_price'], 'buy')
+    df['net_sell_price'] = calculate_net_price(df['unit_price'], 'sell')
+    df.drop(columns=['consumption_unit_price_eur', 'production_unit_price_eur', 'unit_price'], inplace=True)
     df.to_csv("tibber_all_months_merged.csv", index=False)
 
     if PLOT:
@@ -45,7 +58,7 @@ def main():
     profile_df = df[df['date'].isin(recent_days)].copy()
 
     strategies = {
-        "arbitrage": strategy_arbitrage,
+        # "arbitrage": strategy_arbitrage,
         "optimal_mpc": strategy_optimal_mpc,
     }
 
@@ -83,10 +96,10 @@ def main():
         ['strategy', 'annual_savings_eur'],
         ascending=[True, False],
     )[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
-    
+
     # Rename columns for prettier display
     display_df.columns = ['Strategy', 'Cap (kWh)', 'Rate (kW)', 'Savings (€)', 'Net Bill (€)', 'Savings %']
-    
+
     sim_table = display_df.to_string(index=False, justify='center', formatters={
         'Savings (€)': '{:,.2f}'.format,
         'Net Bill (€)': '{:,.2f}'.format,
@@ -107,10 +120,10 @@ def main():
         print("\n" + "╔" + "═" * 88 + "╗")
         print(f"║ {'🏆 BEST CONFIGURATION PER STRATEGY':^86}║")
         print("╠" + "═" * 88 + "╣")
-        
+
         best_display = best_by_strategy[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'savings_pct', 'net_bill_eur']]
         best_display.columns = ['Strategy', 'Cap (kWh)', 'Rate (kW)', 'Savings (€)', 'Savings %', 'Net Bill (€)']
-        
+
         best_table = best_display.to_string(index=False, justify='center', formatters={
             'Savings (€)': '{:,.2f}'.format,
             'Net Bill (€)': '{:,.2f}'.format,

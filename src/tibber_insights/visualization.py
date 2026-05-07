@@ -2,8 +2,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from .constants import (
-    net_household, battery_charge, battery_discharge, 
-    soc, price, cost_no_battery, cost_with_battery
+    net_household, battery_charge, battery_discharge,
+    soc, net_buy_price, net_sell_price, cost_no_battery, cost_with_battery
 )
 
 def plot_battery_behavior(sim_df, days=3):
@@ -24,10 +24,10 @@ def plot_battery_behavior(sim_df, days=3):
         subplot_titles=(
             "Battery State of Charge (SOC)", 
             "Power Flows (kW)", 
-            "Market Price (€/kWh)",
+            "Market Net Price (€/kWh)",
             "Cost Comparison (€) - Line Chart"
         ),
-        row_heights=[0.18, 0.18, 0.14, 0.18]
+        row_heights=[0.1, 0.2, 0.1, 0.2]
     )
 
     # Subplot 1: SOC
@@ -85,10 +85,22 @@ def plot_battery_behavior(sim_df, days=3):
     fig.add_trace(
         go.Scatter(
             x=df3days['hour_starts_at'],
-            y=df3days[price],
-            name=price, 
+            y=df3days[net_buy_price],
+            name=net_buy_price,
             line=dict(color='orange'),
-            hovertemplate=f"{price}: €%{{y:.3f}}<extra></extra>",
+            hovertemplate=f"{net_buy_price}: €%{{y:.3f}}<extra></extra>",
+            legend='legend3'
+        ),
+        row=3, col=1
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=df3days['hour_starts_at'],
+            y=df3days[net_sell_price],
+            name=net_sell_price,
+            line=dict(color='blue'),
+            hovertemplate=f"{net_sell_price}: €%{{y:.3f}}<extra></extra>",
             legend='legend3'
         ),
         row=3, col=1
@@ -120,13 +132,13 @@ def plot_battery_behavior(sim_df, days=3):
     )
 
     fig.update_layout(
-        height=1400,
+        height=1000,
         title_text="Battery Simulation Sanity Check",
         showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        legend2=dict(orientation="h", yanchor="bottom", y=0.81, xanchor="right", x=1),
-        legend3=dict(orientation="h", yanchor="bottom", y=0.62, xanchor="right", x=1),
-        legend4=dict(orientation="h", yanchor="bottom", y=0.45, xanchor="right", x=1),
+        legend=dict(orientation="h", yanchor="top", y=0.98, xanchor="right", x=1),
+        legend2=dict(orientation="h", yanchor="top", y=0.74, xanchor="right", x=1),
+        legend3=dict(orientation="h", yanchor="top", y=0.53, xanchor="right", x=1),
+        legend4=dict(orientation="h", yanchor="top", y=0.36, xanchor="right", x=1),
         barmode='relative',
         hovermode='x'
     )
@@ -137,7 +149,7 @@ def plot_battery_behavior(sim_df, days=3):
     fig.update_yaxes(title_text="€", row=4, col=1)
 
     fig.show()
-    fig.write_image("battery_sanity_check.png")
+    # fig.write_image("battery_sanity_check.png")
 
 
 def plot_battery_savings_surface(results_df, strategy_name, rates, capacities):
