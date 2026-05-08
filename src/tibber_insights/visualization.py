@@ -28,7 +28,7 @@ def plot_battery_behavior(sim_df, days=3):
             "Buy/Sell Net Prices",
             "Cost Comparison"
         ),
-        row_heights=[0.1, 0.2, 0.1, 0.2]
+        row_heights=[0.1, 0.2, 0.1, 0.1]
     )
 
     def add_trace_to_fig(subplot_row, quantity, y_values=df3days, trace_type=go.Scatter, **kwargs):
@@ -63,12 +63,12 @@ def plot_battery_behavior(sim_df, days=3):
     add_trace_to_fig(4, cost_with_battery, line=dict(color='indigo'))
 
     fig.update_layout(
-        height=1000,
+        height=900,
         title_text="Battery Simulation Sanity Check",
         showlegend=True,
-        legend2=dict(orientation="h", yanchor="top", y=0.74, xanchor="right", x=1),
-        legend3=dict(orientation="h", yanchor="top", y=0.53, xanchor="right", x=1),
-        legend4=dict(orientation="h", yanchor="top", y=0.36, xanchor="right", x=1),
+        legend2=dict(orientation="h", yanchor="top", y=0.79, xanchor="right", x=1),
+        legend3=dict(orientation="h", yanchor="top", y=0.41, xanchor="right", x=1),
+        legend4=dict(orientation="h", yanchor="top", y=0.19, xanchor="right", x=1),
         barmode='relative',
         hovermode='x'
     )

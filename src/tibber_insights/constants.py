@@ -20,8 +20,8 @@ EFFICIENCY = 0.90  # Round-trip
 
 # Column Names / Plot Labels
 net_household = quantity("Net Household", KW)
-battery_charge = quantity("Battery Charge", KW)
-battery_discharge = quantity("Battery Discharge", KW)
+battery_charge = quantity("Charge", KW)
+battery_discharge = quantity("Discharge", KW)
 soc = quantity("SOC", KWH)
 net_buy_price = quantity("Net buy price", EUR_KWH)
 net_sell_price = quantity("Net sell price", EUR_KWH)

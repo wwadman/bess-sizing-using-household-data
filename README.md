@@ -30,5 +30,3 @@ Analyze and simulate energy costs with Tibber and home batteries.
 ## Open issues
 - Make the statistically expected consumption/production a rolling average so it better captures seasonality.
 - Consider storing all results in the same pandas df.
-- Resolve legend misplacement.
-- Consider removing pint dependency and replace Quantity class by SimpleNamespace(quantity=quantity, unit=unit)
