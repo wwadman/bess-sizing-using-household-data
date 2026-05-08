@@ -25,94 +25,42 @@ def plot_battery_behavior(sim_df, days=3):
         subplot_titles=(
             "Battery SOC at end of time step",
             "Power Flows",
-            "Market Net Price",
+            "Buy/Sell Net Prices",
             "Cost Comparison"
         ),
         row_heights=[0.1, 0.2, 0.1, 0.2]
     )
 
-    def add_trace_to_fig(name, y_values, subplot_row, trace_type=go.Scatter, **kwargs):
-        if "hovertemplate" not in kwargs:
-            unit = getattr(name, 'unit', '')
-            if str(unit) == EUR:
-                kwargs["hovertemplate"] = f"{name.label}: {EUR}%{{y:.3f}}<extra></extra>"
-            else:
-                kwargs["hovertemplate"] = f"{name.label}: %{{y:.2f}}<extra></extra>"
-        
+    def add_trace_to_fig(subplot_row, quantity, y_values=df3days, trace_type=go.Scatter, **kwargs):
         fig.add_trace(
             trace_type(
                 x=df3days['hour_starts_at'],
-                y=y_values,
-                name=name.label,
+                y=y_values[quantity.label],
+                name=quantity.label,
                 legend=f'legend{subplot_row}',
+                hovertemplate=f"{quantity.label}: %{{y:.3f}} {quantity.unit}<extra></extra>",
                 **kwargs
             ),
             row=subplot_row, col=1
         )
+        fig.update_yaxes(title_text=quantity.unit, row=subplot_row, col=1)
 
     # Subplot 1: SOC
-    add_trace_to_fig(
-        name=soc,
-        y_values=df3days[soc.label],
-        subplot_row=1,
-        fill='tozeroy',
-        line=dict(color='royalblue'),
-        showlegend=False
-    )
+    add_trace_to_fig(1, soc, line=dict(color='royalblue'), fill='tozeroy', showlegend=False)
 
     # Subplot 2: Power Flows
-    add_trace_to_fig(
-        name=net_household,
-        y_values=df3days[net_household.label],
-        subplot_row=2,
-        line=dict(color='gray', dash='dash')
-    )
-    
-    add_trace_to_fig(
-        name=battery_charge,
-        y_values=df3days[battery_charge.label],
-        subplot_row=2,
-        trace_type=go.Bar,
-        marker_color='forestgreen'
-    )
-    
-    add_trace_to_fig(
-        name=battery_discharge,
-        y_values=-df3days[battery_discharge.label],
-        subplot_row=2,
-        trace_type=go.Bar,
-        marker_color='firebrick'
-    )
+    add_trace_to_fig(2, net_household, line=dict(color='gray', dash='dash'))
+    add_trace_to_fig(2, battery_charge, trace_type=go.Bar, marker_color='forestgreen')
+    add_trace_to_fig(2, battery_discharge, trace_type=go.Bar,marker_color='firebrick',
+        y_values=-df3days[[battery_discharge.label]])  # minus 1 to plot discharge negatively
 
     # Subplot 3: Prices
-    add_trace_to_fig(
-        name=net_buy_price,
-        y_values=df3days[net_buy_price.label],
-        subplot_row=3,
-        line=dict(color='orange')
-    )
-
-    add_trace_to_fig(
-        name=net_sell_price,
-        y_values=df3days[net_sell_price.label],
-        subplot_row=3,
-        line=dict(color='blue')
-    )
+    add_trace_to_fig(3, net_buy_price, line=dict(color='orange'))
+    add_trace_to_fig(3, net_sell_price, line=dict(color='blue'))
 
     # Subplot 4: Cost Comparison (Line)
-    add_trace_to_fig(
-        name=cost_no_battery,
-        y_values=df3days[cost_no_battery.label],
-        subplot_row=4,
-        line=dict(color='gray', dash='dash')
-    )
-    
-    add_trace_to_fig(
-        name=cost_with_battery,
-        y_values=df3days[cost_with_battery.label],
-        subplot_row=4,
-        line=dict(color='indigo')
-    )
+    add_trace_to_fig(4, cost_no_battery, line=dict(color='gray', dash='dash'))
+    add_trace_to_fig(4, cost_with_battery, line=dict(color='indigo'))
 
     fig.update_layout(
         height=1000,
@@ -124,14 +72,7 @@ def plot_battery_behavior(sim_df, days=3):
         barmode='relative',
         hovermode='x'
     )
-
-    fig.update_yaxes(title_text=str(soc.unit), row=1, col=1)
-    fig.update_yaxes(title_text=str(net_household.unit), row=2, col=1)
-    fig.update_yaxes(title_text=str(net_buy_price.unit), row=3, col=1)
-    fig.update_yaxes(title_text=str(cost_no_battery.unit), row=4, col=1)
-
     fig.show()
-    # fig.write_image("battery_sanity_check.png")
 
 
 def plot_battery_savings_surface(results_df, strategy_name, rates, capacities):

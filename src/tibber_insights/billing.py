@@ -43,11 +43,11 @@ def forecast_2027_bill(df):
     print("╟" + "─" * (header_width - 2) + "╢")
 
     print(f"║ CONSUMPTION                                    ║")
-    print(f"║   Annual volume:    {forecast['annual_consumed_kwh']:8.0f} {KWH:~<7s}               ║")
+    print(f"║   Annual volume:    {forecast['annual_consumed_kwh']:8.0f} {KWH}               ║")
     print(f"║   Annual cost:      {EUR} {forecast['cons_net_eur']:10.2f}               ║")
     print(f"║                                                ║")
     print(f"║ EXPORT                                         ║")
-    print(f"║   Annual volume:    {forecast['annual_exported_kwh']:8.0f} {KWH:~<7s}               ║")
+    print(f"║   Annual volume:    {forecast['annual_exported_kwh']:8.0f} {KWH}               ║")
     print(f"║   Annual revenue:   {EUR} {forecast['export_net_eur']:10.2f}               ║")
     print("╠" + "═" * (header_width - 2) + "╣")
     print(f"║ NET ANNUAL BILL:    {EUR} {forecast['net_bill_2027_eur']:10.2f}               ║")

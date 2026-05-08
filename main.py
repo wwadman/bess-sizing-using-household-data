@@ -102,11 +102,11 @@ def main():
     )[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
 
     # Rename columns for prettier display
-    display_df.columns = ['Strategy', f'Cap ({soc.unit:~})', f'Rate ({net_household.unit:~})', f'Savings ({EUR})', f'Net Bill ({EUR})', 'Savings %']
+    display_df.columns = ['Strategy', f'Cap ({soc.unit})', f'Rate ({net_household.unit})', f'Savings ({EUR})', f'Net Bill ({EUR})', 'Savings %']
 
     sim_table = display_df.to_string(index=False, justify='center', formatters={
-        f'Cap ({soc.unit:~})': '{:.0f}'.format,
-        f'Rate ({net_household.unit:~})': '{:.1f}'.format,
+        f'Cap ({soc.unit})': '{:.0f}'.format,
+        f'Rate ({net_household.unit})': '{:.1f}'.format,
         f'Savings ({EUR})': '{:,.2f}'.format,
         f'Net Bill ({EUR})': '{:,.2f}'.format,
         'Savings %': '{:.1f}%'.format,
@@ -126,11 +126,11 @@ def main():
         print("╠" + "═" * 88 + "╣")
 
         best_display = best_by_strategy[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'savings_pct', 'net_bill_eur']]
-        best_display.columns = ['Strategy', f'Cap ({soc.unit:~})', f'Rate ({net_household.unit:~})', f'Savings ({EUR})', 'Savings %', f'Net Bill ({EUR})']
+        best_display.columns = ['Strategy', f'Cap ({soc.unit})', f'Rate ({net_household.unit})', f'Savings ({EUR})', 'Savings %', f'Net Bill ({EUR})']
 
         best_table = best_display.to_string(index=False, justify='center', formatters={
-            f'Cap ({soc.unit:~})': '{:.0f}'.format,
-            f'Rate ({net_household.unit:~})': '{:.1f}'.format,
+            f'Cap ({soc.unit})': '{:.0f}'.format,
+            f'Rate ({net_household.unit})': '{:.1f}'.format,
             f'Savings ({EUR})': '{:,.2f}'.format,
             f'Net Bill ({EUR})': '{:,.2f}'.format,
             'Savings %': '{:.1f}%'.format,
