@@ -42,13 +42,13 @@ def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
 
         
         # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
-        if current_hour[net_household] > 0:
-            cost_no_batt = current_hour[net_household] * current_hour.net_buy_price
+        if current_hour[net_household.label] > 0:
+            cost_no_batt = current_hour[net_household.label] * current_hour.net_buy_price
         else:
-            cost_no_batt = current_hour[net_household] * current_hour.net_sell_price
+            cost_no_batt = current_hour[net_household.label] * current_hour.net_sell_price
             
         # Cost with battery: (net_kwh + charge - discharge) * relevant_price
-        new_net_kwh = current_hour[net_household] + charge_kwh - discharge_kwh
+        new_net_kwh = current_hour[net_household.label] + charge_kwh - discharge_kwh
         if new_net_kwh > 0:
             cost_with_batt = new_net_kwh * current_hour.net_buy_price
         else:
@@ -58,14 +58,14 @@ def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
 
         simulation_logs.append({
             'hour_starts_at': current_hour['hour_starts_at'],
-            soc: current_soc,
-            battery_charge: charge_kwh,
-            battery_discharge: discharge_kwh,
-            net_household: current_hour[net_household],
-            net_buy_price: current_hour['net_buy_price'],
-            net_sell_price: current_hour['net_sell_price'],
-            cost_no_battery: cost_no_batt,
-            cost_with_battery: cost_with_batt
+            soc.label: current_soc,
+            battery_charge.label: charge_kwh,
+            battery_discharge.label: discharge_kwh,
+            net_household.label: current_hour[net_household.label],
+            net_buy_price.label: current_hour['net_buy_price'],
+            net_sell_price.label: current_hour['net_sell_price'],
+            cost_no_battery.label: cost_no_batt,
+            cost_with_battery.label: cost_with_batt
         })
 
     return total_savings, pd.DataFrame(simulation_logs)

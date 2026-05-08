@@ -2,7 +2,11 @@ import pandas as pd
 import plotly.express as px
 from itertools import product
 from tibber_insights.data_loader import load_monthly_files
-from tibber_insights.constants import net_household
+from tibber_insights.constants import (
+    net_household, battery_charge, battery_discharge,
+    soc, net_buy_price, net_sell_price, cost_no_battery, cost_with_battery,
+    EUR, KW, KWH, EUR_KWH
+)
 from tibber_insights.billing import forecast_2027_bill, calculate_net_price
 from tibber_insights.simulation import (
     run_battery_simulation,
@@ -40,8 +44,8 @@ def main():
     df.to_csv("tibber_all_months_merged.csv", index=False)
 
     if PLOT:
-        fig = px.line(df, x="hour_starts_at", y=net_household)
-        fig.update_traces(hovertemplate=f"{net_household}: %{{y:.2f}}<extra></extra>")
+        fig = px.line(df, x="hour_starts_at", y=net_household.label)
+        fig.update_traces(hovertemplate=f"{net_household.label}: %{{y:.2f}}<extra></extra>")
         fig.update_layout(hovermode='x')
         fig.show()
 
@@ -98,14 +102,14 @@ def main():
     )[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
 
     # Rename columns for prettier display
-    display_df.columns = ['Strategy', 'Cap (kWh)', 'Rate (kW)', 'Savings (€)', 'Net Bill (€)', 'Savings %']
+    display_df.columns = ['Strategy', f'Cap ({soc.unit:~})', f'Rate ({net_household.unit:~})', f'Savings ({EUR})', f'Net Bill ({EUR})', 'Savings %']
 
     sim_table = display_df.to_string(index=False, justify='center', formatters={
-        'Savings (€)': '{:,.2f}'.format,
-        'Net Bill (€)': '{:,.2f}'.format,
+        f'Cap ({soc.unit:~})': '{:.0f}'.format,
+        f'Rate ({net_household.unit:~})': '{:.1f}'.format,
+        f'Savings ({EUR})': '{:,.2f}'.format,
+        f'Net Bill ({EUR})': '{:,.2f}'.format,
         'Savings %': '{:.1f}%'.format,
-        'Cap (kWh)': '{:.0f}'.format,
-        'Rate (kW)': '{:.1f}'.format
     })
     for line in sim_table.split('\n'):
         print(f"║ {line:^86} ║")
@@ -122,14 +126,14 @@ def main():
         print("╠" + "═" * 88 + "╣")
 
         best_display = best_by_strategy[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'savings_pct', 'net_bill_eur']]
-        best_display.columns = ['Strategy', 'Cap (kWh)', 'Rate (kW)', 'Savings (€)', 'Savings %', 'Net Bill (€)']
+        best_display.columns = ['Strategy', f'Cap ({soc.unit:~})', f'Rate ({net_household.unit:~})', f'Savings ({EUR})', 'Savings %', f'Net Bill ({EUR})']
 
         best_table = best_display.to_string(index=False, justify='center', formatters={
-            'Savings (€)': '{:,.2f}'.format,
-            'Net Bill (€)': '{:,.2f}'.format,
+            f'Cap ({soc.unit:~})': '{:.0f}'.format,
+            f'Rate ({net_household.unit:~})': '{:.1f}'.format,
+            f'Savings ({EUR})': '{:,.2f}'.format,
+            f'Net Bill ({EUR})': '{:,.2f}'.format,
             'Savings %': '{:.1f}%'.format,
-            'Cap (kWh)': '{:.0f}'.format,
-            'Rate (kW)': '{:.1f}'.format
         })
         for line in best_table.split('\n'):
             print(f"║ {line:^86} ║")
