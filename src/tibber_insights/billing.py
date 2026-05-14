@@ -1,4 +1,5 @@
-from .constants import ENERGIEBELASTING, INKOOPVERGOEDING, VAT_RATE, EUR, KWH
+from .constants import ENERGIEBELASTING, INKOOPVERGOEDING, VAT_RATE, EUR, KWH, net_buy_price, net_sell_price
+
 
 def calculate_net_price(unit_price, buy_or_sell):
     """Calculates net buy or sell price including VAT."""
@@ -12,8 +13,8 @@ def forecast_2027_bill(df):
     annual_consumed = df['consumption_kwh'].sum()
     annual_exported = df['production_kwh'].sum()
 
-    cons_net = (df['net_buy_price'] * df['consumption_kwh']).sum()
-    export_net = (df['net_sell_price'] * df['production_kwh']).sum()
+    cons_net = (df[net_buy_price.label] * df['consumption_kwh']).sum()
+    export_net = (df[net_sell_price.label] * df['production_kwh']).sum()
 
     net_bill = cons_net - export_net
 

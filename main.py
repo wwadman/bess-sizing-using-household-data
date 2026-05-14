@@ -38,8 +38,8 @@ def main():
     # This is super confusing, since we want to mimic 2027 onwards, which has IV for consumption only
     # So we will use only the production_unit_price_eur and add the IV (and EB and BTW) to obtain the consumption_unit_price_eur_net
     df['unit_price'] = df.production_unit_price_eur
-    df['net_buy_price'] = calculate_net_price(df['unit_price'], 'buy')
-    df['net_sell_price'] = calculate_net_price(df['unit_price'], 'sell')
+    df[net_buy_price.label] = calculate_net_price(df['unit_price'], 'buy')
+    df[net_sell_price.label] = calculate_net_price(df['unit_price'], 'sell')
     df.drop(columns=['consumption_unit_price_eur', 'production_unit_price_eur', 'unit_price'], inplace=True)
 
     # Focus all analysis on the very last 365 * 24 hours
