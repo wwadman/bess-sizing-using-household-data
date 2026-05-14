@@ -18,7 +18,7 @@ from tibber_insights.visualization import (
     plot_battery_behavior
 )
 
-PLOT = False
+PLOT = True
 SANITY_CHECK = True
 
 def main():
@@ -51,23 +51,16 @@ def main():
     n_weeks_to_look_back = 4
     look_back_hours_for_rolling_mean = [24 * 7 * (i + 1) for i in range(n_weeks_to_look_back)]
     for col, exp_col in [('consumption_kwh', 'exp_cons'), ('production_kwh', 'exp_prod')]:
-        df[exp_col] = df[col].shift(look_back_hours_for_rolling_mean).mean(1)
+        df[exp_col] = df[col].shift(look_back_hours_for_rolling_mean).mean(axis=1)
 
     df.to_csv("tibber_all_months_merged.csv", index=False)
-
-
-    if PLOT:
-        fig = px.line(df, x="hour_starts_at", y=net_household.label)
-        fig.update_traces(hovertemplate=f"{net_household.label}: %{{y:.2f}}<extra></extra>")
-        fig.update_layout(hovermode='x')
-        fig.show()
 
     # -- 2027 bill forecast --------------------------------------------------------
     forecast = forecast_2027_bill(df)
 
     # -- Battery simulation --------------------------------------------------------
-    capacities = [0, 20]   # [2, 5, 10, 20]
-    rates = [2.4]       # [0.8, 1.2, 1.5, 2.4]
+    capacities = [0, 2, 5, 10, 20]   # [2, 5, 10, 20]
+    rates = [0.8, 1.2, 2.4, 4]       #
 
     baseline_bill = forecast['net_bill_2027_eur']
 
@@ -87,9 +80,9 @@ def main():
                 strategy_fn=strategy_fn,
             )
 
-            if SANITY_CHECK and capacity == 20 and strategy_name == "optimal_mpc":
+            if SANITY_CHECK and strategy_name == "optimal_mpc":
                 print(f"\n--- Generating sanity check plot for {strategy_name} (20kWh) ---")
-                plot_battery_behavior(sim_df, capacity, rate, days=3)
+                plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3)
 
             sim_results.append({
                 'strategy': strategy_name,
