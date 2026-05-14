@@ -9,12 +9,12 @@ def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
     df = profile_df.copy()
     df['hour'] = df['hour_starts_at'].dt.hour
 
-    hourly_stats = df.groupby('hour').agg({
-        'consumption_kwh': 'mean',
-        'production_kwh': 'mean',
-    }).rename(columns={'consumption_kwh': 'exp_cons', 'production_kwh': 'exp_prod'})
-
-    df = df.merge(hourly_stats, on='hour', how='left')
+    # Calculate expected consumption and production as rolling averages of the past 4 weeks
+    # (same hour of the day and day of the week)
+    n_weeks_to_look_back = 4
+    look_back_hours_for_rolling_mean = [24 * 7 * (i + 1) for i in range(n_weeks_to_look_back)]
+    for col, exp_col in [('consumption_kwh', 'exp_cons'), ('production_kwh', 'exp_prod')]:
+        df[exp_col] = df[col].shift(look_back_hours_for_rolling_mean).mean(1)
 
     current_soc = 0.0
     total_savings = 0.0
@@ -31,7 +31,6 @@ def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
             soc=current_soc,
             capacity_kwh=capacity_kwh,
             rate_kw=rate_kw,
-            hourly_stats=hourly_stats,
         )
 
         charge_kwh = max(0, min(charge_kwh, rate_kw, capacity_kwh - current_soc))
@@ -71,7 +70,7 @@ def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
     return total_savings, pd.DataFrame(simulation_logs)
 
 
-def strategy_arbitrage(row, future_df, soc, capacity_kwh, rate_kw, hourly_stats):
+def strategy_arbitrage(row, future_df, soc, capacity_kwh, rate_kw):
     actual_solar = row['production_kwh'] if pd.notna(row['production_kwh']) else 0.0
     charge_kwh = min(actual_solar, rate_kw)
 
@@ -86,7 +85,7 @@ def strategy_arbitrage(row, future_df, soc, capacity_kwh, rate_kw, hourly_stats)
     return charge_kwh, discharge_kwh
 
 #
-# def strategy_greedy(row, future_df, soc, capacity_kwh, rate_kw, hourly_stats):
+# def strategy_greedy(row, future_df, soc, capacity_kwh, rate_kw):
 #     price = row['consumption_unit_price_eur']
 #     day_prices = future_df['consumption_unit_price_eur']
 #
@@ -106,7 +105,7 @@ def strategy_arbitrage(row, future_df, soc, capacity_kwh, rate_kw, hourly_stats)
 #     return charge_kwh, discharge_kwh
 #
 #
-# def strategy_solar_plus_low_price(row, future_df, soc, capacity_kwh, rate_kw, hourly_stats):
+# def strategy_solar_plus_low_price(row, future_df, soc, capacity_kwh, rate_kw):
 #     charge_kwh = row['production_kwh'] if pd.notna(row['production_kwh']) else 0.0
 #
 #     if row['consumption_unit_price_eur'] < 0.05:
@@ -118,7 +117,7 @@ def strategy_arbitrage(row, future_df, soc, capacity_kwh, rate_kw, hourly_stats)
 #     return charge_kwh, discharge_kwh
 
 
-def strategy_optimal_mpc(row, future_df, soc, capacity_kwh, rate_kw, hourly_stats,
+def strategy_optimal_mpc(row, future_df, soc, capacity_kwh, rate_kw,
                          horizon_hours=24, eta=0.90):
     future_df = future_df.iloc[:horizon_hours]
     n = len(future_df)
