@@ -14,8 +14,7 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
     simulation_logs = []
 
     for i in range(len(sim_df)):
-        now = sim_df.iloc[i]  # now denotes current hour in the simulation
-        future_df = sim_df.iloc[i:i + 24]
+        now, future_df = get_now_and_known_future(i, sim_df)
 
         charge_kwh, discharge_kwh = strategy_fn(
             row=now,
@@ -54,6 +53,19 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
     df_logs = pd.DataFrame(simulation_logs)
     sim_df = sim_df.merge(df_logs, on="hour_starts_at", how="left", suffixes=("", "_logged"))
     return total_savings, sim_df
+
+
+def get_now_and_known_future(i, sim_df):
+    now = sim_df.iloc[i]  # now denotes current hour in the simulation
+
+    # Dynamic horizon: rest of today + (if past 1pm) tomorrow
+    current_hour = now["hour_starts_at"].hour
+    hours_until_midnight = 24 - current_hour
+    horizon = hours_until_midnight
+    if current_hour >= 13:
+        horizon += 24
+    future_df = sim_df.iloc[i:i + horizon]
+    return now, future_df
 
 
 def strategy_arbitrage(row, future_df, soc, capacity_kwh, rate_kw):
