@@ -5,27 +5,20 @@ from .constants import (
     soc, cost_no_battery, cost_with_battery, net_buy_price, net_sell_price
 )
 
-def run_battery_simulation(df, capacity_kwh, rate_kw, strategy_fn):
-    df = df.copy()  # To avoid adding columns to the original DataFrame, for every strategy, rate and capacity
-
-    # Calculate expected consumption and production as rolling averages of the past 4 weeks
-    # (same hour of the day and day of the week)
-    n_weeks_to_look_back = 4
-    look_back_hours_for_rolling_mean = [24 * 7 * (i + 1) for i in range(n_weeks_to_look_back)]
-    for col, exp_col in [('consumption_kwh', 'exp_cons'), ('production_kwh', 'exp_prod')]:
-        df[exp_col] = df[col].shift(look_back_hours_for_rolling_mean).mean(1)
+def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
+    sim_df = sim_df.copy()  # To avoid adding columns to the original DataFrame, for every strategy, rate and capacity
 
     current_soc = 0.0
     total_savings = 0.0
     
     simulation_logs = []
 
-    for i in range(len(df)):
-        current_hour = df.iloc[i]
-        future_df = df.iloc[i:i + 24]
+    for i in range(len(sim_df)):
+        this_hour = sim_df.iloc[i]
+        future_df = sim_df.iloc[i:i + 24]
 
         charge_kwh, discharge_kwh = strategy_fn(
-            row=current_hour,
+            row=this_hour,
             future_df=future_df,
             soc=current_soc,
             capacity_kwh=capacity_kwh,
@@ -38,34 +31,29 @@ def run_battery_simulation(df, capacity_kwh, rate_kw, strategy_fn):
         discharge_kwh = max(0, min(discharge_kwh, rate_kw, current_soc * EFFICIENCY))
         current_soc -= discharge_kwh / EFFICIENCY
 
-        
         # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
-        if current_hour[net_household.label] > 0:
-            cost_no_batt = current_hour[net_household.label] * current_hour[net_buy_price.label]
-        else:
-            cost_no_batt = current_hour[net_household.label] * current_hour[net_sell_price.label]
-            
+        price_this_hour = this_hour[net_buy_price.l] if this_hour[net_household.l] > 0 else this_hour[net_sell_price.l]
+        cost_no_batt = this_hour[net_household.l] * price_this_hour
+
         # Cost with battery: (net_kwh + charge - discharge) * relevant_price
-        new_net_kwh = current_hour[net_household.label] + charge_kwh - discharge_kwh
-        if new_net_kwh > 0:
-            cost_with_batt = new_net_kwh * current_hour[net_buy_price.label]
-        else:
-            cost_with_batt = new_net_kwh * current_hour[net_sell_price.label]
+        new_net_kwh = this_hour[net_household.l] + charge_kwh - discharge_kwh
+        price_this_hour = this_hour[net_buy_price.l] if new_net_kwh > 0 else this_hour[net_sell_price.l]
+        cost_with_batt = new_net_kwh * price_this_hour
 
         total_savings += cost_no_batt - cost_with_batt
 
         simulation_logs.append({
-            'hour_starts_at': current_hour['hour_starts_at'],
-            soc.label: current_soc,
-            battery_charge.label: charge_kwh,
-            battery_discharge.label: discharge_kwh,
-            cost_no_battery.label: cost_no_batt,
-            cost_with_battery.label: cost_with_batt
+            'hour_starts_at': this_hour['hour_starts_at'],
+            soc.l: current_soc,
+            battery_charge.l: charge_kwh,
+            battery_discharge.l: discharge_kwh,
+            cost_no_battery.l: cost_no_batt,
+            cost_with_battery.l: cost_with_batt
         })
 
     df_logs = pd.DataFrame(simulation_logs)
-    df = df.merge(df_logs, on="hour_starts_at", how="left", suffixes=("", "_logged"))
-    return total_savings, df
+    sim_df = sim_df.merge(df_logs, on="hour_starts_at", how="left", suffixes=("", "_logged"))
+    return total_savings, sim_df
 
 
 def strategy_arbitrage(row, future_df, soc, capacity_kwh, rate_kw):
@@ -121,8 +109,8 @@ def strategy_optimal_mpc(row, future_df, soc, capacity_kwh, rate_kw,
     n = len(future_df)
     
     # Calculate effective buy and sell prices including taxes and VAT
-    buy = future_df[net_buy_price.label].values
-    sell = future_df[net_sell_price.label].values
+    buy = future_df[net_buy_price.l].values
+    sell = future_df[net_sell_price.l].values
 
     plan_c = np.zeros(n)
     plan_d = np.zeros(n)

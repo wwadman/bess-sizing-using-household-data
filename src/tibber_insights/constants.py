@@ -8,7 +8,7 @@ EUR_KWH = f"{EUR}/{KWH}"
 
 
 def quantity(label, unit):
-    return SimpleNamespace(label=label, unit=unit)
+    return SimpleNamespace(l=label, unit=unit)
 
 
 # 2027 Netherlands rates

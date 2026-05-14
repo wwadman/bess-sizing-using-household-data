@@ -35,10 +35,10 @@ def plot_battery_behavior(sim_df, days=3):
         fig.add_trace(
             trace_type(
                 x=df3days['hour_starts_at'],
-                y=y_values[quantity.label],
-                name=quantity.label,
+                y=y_values[quantity.l],
+                name=quantity.l,
                 legend=f'legend{subplot_row}',
-                hovertemplate=f"{quantity.label}: %{{y:.3f}} {quantity.unit}<extra></extra>",
+                hovertemplate=f"{quantity.l}: %{{y:.3f}} {quantity.unit}<extra></extra>",
                 **kwargs
             ),
             row=subplot_row, col=1
@@ -51,8 +51,8 @@ def plot_battery_behavior(sim_df, days=3):
     # Subplot 2: Power Flows
     add_trace_to_fig(2, net_household, line=dict(color='gray', dash='dash'))
     add_trace_to_fig(2, battery_charge, trace_type=go.Bar, marker_color='forestgreen')
-    add_trace_to_fig(2, battery_discharge, trace_type=go.Bar,marker_color='firebrick',
-        y_values=-df3days[[battery_discharge.label]])  # minus 1 to plot discharge negatively
+    add_trace_to_fig(2, battery_discharge, trace_type=go.Bar, marker_color='firebrick',
+                     y_values=-df3days[[battery_discharge.l]])  # minus 1 to plot discharge negatively
 
     # Subplot 3: Prices
     add_trace_to_fig(3, net_buy_price, line=dict(color='orange'))
