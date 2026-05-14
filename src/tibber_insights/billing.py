@@ -13,8 +13,8 @@ def forecast_2027_bill(df):
     annual_consumed = df['consumption_kwh'].sum()
     annual_exported = df['production_kwh'].sum()
 
-    cons_net = (df[net_buy_price.l] * df['consumption_kwh']).sum()
-    export_net = (df[net_sell_price.l] * df['production_kwh']).sum()
+    cons_net = (df[net_buy_price.label] * df['consumption_kwh']).sum()
+    export_net = (df[net_sell_price.label] * df['production_kwh']).sum()
 
     net_bill = cons_net - export_net
 

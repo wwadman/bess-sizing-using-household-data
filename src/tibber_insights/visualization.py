@@ -7,7 +7,7 @@ from .constants import (
     EUR, KW, KWH, EUR_KWH
 )
 
-def plot_battery_behavior(sim_df, days=3):
+def plot_battery_behavior(sim_df, days=None):
     """
     Plots battery behavior (SOC, Charge/Discharge) alongside net consumption and prices.
     Zooms in on the last `days` days by default.
@@ -35,10 +35,10 @@ def plot_battery_behavior(sim_df, days=3):
         fig.add_trace(
             trace_type(
                 x=df3days['hour_starts_at'],
-                y=y_values[quantity.l],
-                name=quantity.l,
+                y=y_values[quantity.label],
+                name=quantity.label,
                 legend=f'legend{subplot_row}',
-                hovertemplate=f"{quantity.l}: %{{y:.3f}} {quantity.unit}<extra></extra>",
+                hovertemplate=f"{quantity.label}: %{{y:.3f}} {quantity.unit}<extra></extra>",
                 **kwargs
             ),
             row=subplot_row, col=1
@@ -49,10 +49,11 @@ def plot_battery_behavior(sim_df, days=3):
     add_trace_to_fig(1, soc, line=dict(color='royalblue'), fill='tozeroy', showlegend=False)
 
     # Subplot 2: Power Flows
-    add_trace_to_fig(2, net_household, line=dict(color='gray', dash='dash'))
+    add_trace_to_fig(2, net_household, line=dict(color='grey', dash='dash'))
     add_trace_to_fig(2, battery_charge, trace_type=go.Bar, marker_color='forestgreen')
     add_trace_to_fig(2, battery_discharge, trace_type=go.Bar, marker_color='firebrick',
-                     y_values=-df3days[[battery_discharge.l]])  # minus 1 to plot discharge negatively
+                     y_values=-df3days[[battery_discharge.label]])  # minus 1 to plot discharge negatively
+    fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
 
     # Subplot 3: Prices
     add_trace_to_fig(3, net_buy_price, line=dict(color='orange'))
@@ -61,6 +62,7 @@ def plot_battery_behavior(sim_df, days=3):
     # Subplot 4: Cost Comparison (Line)
     add_trace_to_fig(4, cost_no_battery, line=dict(color='gray', dash='dash'))
     add_trace_to_fig(4, cost_with_battery, line=dict(color='indigo'))
+    fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=4, col=1)
 
     fig.update_layout(
         height=900,

@@ -38,8 +38,8 @@ def main():
     # This is super confusing, since we want to mimic 2027 onwards, which has IV for consumption only
     # So we will use only the production_unit_price_eur and add the IV (and EB and BTW) to obtain the consumption_unit_price_eur_net
     df['unit_price'] = df.production_unit_price_eur
-    df[net_buy_price.l] = calculate_net_price(df['unit_price'], 'buy')
-    df[net_sell_price.l] = calculate_net_price(df['unit_price'], 'sell')
+    df[net_buy_price.label] = calculate_net_price(df['unit_price'], 'buy')
+    df[net_sell_price.label] = calculate_net_price(df['unit_price'], 'sell')
     df.drop(columns=['consumption_unit_price_eur', 'production_unit_price_eur', 'unit_price'], inplace=True)
 
     # Focus all analysis on the very last 365 * 24 hours
@@ -57,8 +57,8 @@ def main():
 
 
     if PLOT:
-        fig = px.line(df, x="hour_starts_at", y=net_household.l)
-        fig.update_traces(hovertemplate=f"{net_household.l}: %{{y:.2f}}<extra></extra>")
+        fig = px.line(df, x="hour_starts_at", y=net_household.label)
+        fig.update_traces(hovertemplate=f"{net_household.label}: %{{y:.2f}}<extra></extra>")
         fig.update_layout(hovermode='x')
         fig.show()
 
@@ -89,7 +89,7 @@ def main():
 
             if SANITY_CHECK and capacity == 20 and strategy_name == "optimal_mpc":
                 print(f"\n--- Generating sanity check plot for {strategy_name} (20kWh) ---")
-                plot_battery_behavior(sim_df, days=3)
+                plot_battery_behavior(sim_df)
 
             sim_results.append({
                 'strategy': strategy_name,

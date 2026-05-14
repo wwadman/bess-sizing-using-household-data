@@ -8,7 +8,7 @@ EUR_KWH = f"{EUR}/{KWH}"
 
 
 def quantity(label, unit):
-    return SimpleNamespace(l=label, unit=unit)
+    return SimpleNamespace(label=label, unit=unit)
 
 
 # 2027 Netherlands rates
@@ -29,7 +29,7 @@ cost_no_battery = quantity("Cost w/o Battery", EUR)
 cost_with_battery = quantity("Cost with Battery", EUR)
 
 if __name__ == "__main__":
-    print(f"{net_household.label} ({net_household.unit})")
+    print(f"{net_household.l} ({net_household.unit})")
     print(net_household)
-    print(net_household.label)
+    print(net_household.l)
     print(net_household.unit)
