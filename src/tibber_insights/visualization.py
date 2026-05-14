@@ -7,7 +7,7 @@ from .constants import (
     EUR, KW, KWH, EUR_KWH
 )
 
-def plot_battery_behavior(sim_df, days=None):
+def plot_battery_behavior(sim_df, capacity, rate, days=None):
     """
     Plots battery behavior (SOC, Charge/Discharge) alongside net consumption and prices.
     Zooms in on the last `days` days by default.
@@ -47,6 +47,7 @@ def plot_battery_behavior(sim_df, days=None):
 
     # Subplot 1: SOC
     add_trace_to_fig(1, soc, line=dict(color='royalblue'), fill='tozeroy', showlegend=False)
+    fig.add_hline(y=capacity, line_width=2, line_dash="solid", line_color="blue", row=1, col=1)
 
     # Subplot 2: Power Flows
     add_trace_to_fig(2, net_household, line=dict(color='grey', dash='dash'))
@@ -66,7 +67,7 @@ def plot_battery_behavior(sim_df, days=None):
 
     fig.update_layout(
         height=900,
-        title_text="Battery Simulation Sanity Check",
+        title_text=f"Simulation Sanity Check ({capacity} {KWH} Battery, charge rate: {rate} {KW})",
         showlegend=True,
         legend2=dict(orientation="h", yanchor="top", y=0.79, xanchor="right", x=1),
         legend3=dict(orientation="h", yanchor="top", y=0.41, xanchor="right", x=1),
