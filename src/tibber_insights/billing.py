@@ -9,24 +9,16 @@ def calculate_net_price(unit_price, buy_or_sell):
 
 def forecast_2027_bill(df):
     """Calculate the 2027 bill using the last 365-day profile."""
-    df = df.copy()
+    annual_consumed = df['consumption_kwh'].sum()
+    annual_exported = df['production_kwh'].sum()
 
-    df['date'] = df['hour_starts_at'].dt.date
-    recent_days = sorted(df['date'].unique())[-365:]
-    profile_df = df[df['date'].isin(recent_days)].copy()
-
-    annual_consumed = profile_df['consumption_kwh'].sum()
-    annual_exported = profile_df['production_kwh'].sum()
-    
-    # cons_net = (calculate_net_price(profile_df['consumption_unit_price_eur'], 'buy') * profile_df['consumption_kwh']).sum()
-    # export_net = (calculate_net_price(profile_df['production_unit_price_eur'], 'sell') * profile_df['production_kwh']).sum()
-    cons_net = (profile_df['net_buy_price'] * profile_df['consumption_kwh']).sum()
-    export_net = (profile_df['net_sell_price'] * profile_df['production_kwh']).sum()
+    cons_net = (df['net_buy_price'] * df['consumption_kwh']).sum()
+    export_net = (df['net_sell_price'] * df['production_kwh']).sum()
 
     net_bill = cons_net - export_net
 
     forecast = {
-        'period_days': len(recent_days),
+        'period_days': len(df) // 24,
         'annual_consumed_kwh': annual_consumed,
         'annual_exported_kwh': annual_exported,
         'cons_net_eur': cons_net,

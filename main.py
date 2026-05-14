@@ -41,7 +41,13 @@ def main():
     df['net_buy_price'] = calculate_net_price(df['unit_price'], 'buy')
     df['net_sell_price'] = calculate_net_price(df['unit_price'], 'sell')
     df.drop(columns=['consumption_unit_price_eur', 'production_unit_price_eur', 'unit_price'], inplace=True)
+
+    # Focus all analysis on the very last 365 * 24 hours
+    recent_hours = sorted(df['hour_starts_at'].unique())[-365 * 24:]
+    df = df[df['hour_starts_at'].isin(recent_hours)].copy()
+
     df.to_csv("tibber_all_months_merged.csv", index=False)
+
 
     if PLOT:
         fig = px.line(df, x="hour_starts_at", y=net_household.label)
@@ -57,9 +63,6 @@ def main():
     rates = [2.4]       # [0.8, 1.2, 1.5, 2.4]
 
     baseline_bill = forecast['net_bill_2027_eur']
-    df['date'] = df['hour_starts_at'].dt.date
-    recent_days = sorted(df['date'].unique())[-366:-1]
-    profile_df = df[df['date'].isin(recent_days)].copy()
 
     strategies = {
         # "arbitrage": strategy_arbitrage,
@@ -71,7 +74,7 @@ def main():
     for capacity, rate in product(capacities, rates):
         for strategy_name, strategy_fn in strategies.items():
             savings, sim_df = run_battery_simulation(
-                profile_df=profile_df,
+                df=df,
                 capacity_kwh=capacity,
                 rate_kw=rate,
                 strategy_fn=strategy_fn,

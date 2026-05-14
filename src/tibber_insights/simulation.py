@@ -5,9 +5,8 @@ from .constants import (
     soc, cost_no_battery, cost_with_battery, net_buy_price, net_sell_price
 )
 
-def run_battery_simulation(profile_df, capacity_kwh, rate_kw, strategy_fn):
-    df = profile_df.copy()
-    df['hour'] = df['hour_starts_at'].dt.hour
+def run_battery_simulation(df, capacity_kwh, rate_kw, strategy_fn):
+    df = df.copy()
 
     # Calculate expected consumption and production as rolling averages of the past 4 weeks
     # (same hour of the day and day of the week)
