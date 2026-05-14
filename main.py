@@ -81,7 +81,6 @@ def main():
             )
 
             if SANITY_CHECK and strategy_name == "optimal_mpc":
-                print(f"\n--- Generating sanity check plot for {strategy_name} (20kWh) ---")
                 plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3)
 
             sim_results.append({

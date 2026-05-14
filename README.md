@@ -28,8 +28,7 @@ Analyze and simulate energy costs with Tibber and home batteries.
 
 
 ## Open issues
-- Consider storing all results in the same pandas df.
+- Sanity check optimal_mpc
 
-## Nice-to-haves
-- To optimize battery operation, instead of looking forward for 24h at any hour of the time series, look forward until coming midnight, or next midnight if after 13:00. 
+## Nice-to-haves 
 - 
