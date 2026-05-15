@@ -7,16 +7,11 @@ from .constants import (
     EUR, KW, KWH, time
 )
 
-def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=None):
+def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
     """
     Plots battery behavior (SOC, Charge/Discharge) alongside net consumption and prices.
     Zooms in on the last `days` days by default.
     """
-    df3days = sim_df.copy()
-    if days:
-        end_date = df3days[time].max()
-        start_date = end_date - pd.Timedelta(days=days)
-        df3days = df3days[df3days[time] >= start_date]
 
     fig = make_subplots(
         rows=4, cols=1,
@@ -31,10 +26,10 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=None):
         row_heights=[0.1, 0.2, 0.1, 0.1]
     )
 
-    def add_trace_to_fig(subplot_row, quantity, y_values=df3days, trace_type=go.Scatter, **kwargs):
+    def add_trace_to_fig(subplot_row, quantity, y_values=sim_df, trace_type=go.Scatter, **kwargs):
         fig.add_trace(
             trace_type(
-                x=df3days[time],
+                x=sim_df[time],
                 y=y_values[quantity],
                 name=quantity,
                 legend=f'legend{subplot_row}',
@@ -53,7 +48,7 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=None):
     add_trace_to_fig(2, net_household, line=dict(color='grey', dash='dash'))
     add_trace_to_fig(2, charge, trace_type=go.Bar, marker_color='forestgreen')
     add_trace_to_fig(2, discharge, trace_type=go.Bar, marker_color='firebrick',
-                     y_values=-df3days[[discharge]])  # minus 1 to plot discharge negatively
+                     y_values=-sim_df[[discharge]])  # minus 1 to plot discharge negatively
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
 
     # Subplot 3: Prices
@@ -77,6 +72,13 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=None):
         barmode='relative',
         hovermode='x'
     )
+
+    # Set initial zoom to the last n days, but allow panning
+    if days:
+        end_date = sim_df[time].max()
+        start_date = end_date - pd.Timedelta(days=days)
+        fig.update_xaxes(range=[start_date, end_date])
+
     fig.show()
 
 
