@@ -2,9 +2,9 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from .constants import (
-    net_household, battery_charge, battery_discharge,
-    soc, net_buy_price, net_sell_price, cost_no_battery, cost_with_battery,
-    EUR, KW, KWH, EUR_KWH
+    net_household, charge, discharge,
+    soc, net_buy_price, net_sell_price, cost_wo_battery, cost_with_battery,
+    EUR, KW, KWH, time
 )
 
 def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=None):
@@ -14,9 +14,9 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=None):
     """
     df3days = sim_df.copy()
     if days:
-        end_date = df3days['hour_starts_at'].max()
+        end_date = df3days[time].max()
         start_date = end_date - pd.Timedelta(days=days)
-        df3days = df3days[df3days['hour_starts_at'] >= start_date]
+        df3days = df3days[df3days[time] >= start_date]
 
     fig = make_subplots(
         rows=4, cols=1,
@@ -34,11 +34,11 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=None):
     def add_trace_to_fig(subplot_row, quantity, y_values=df3days, trace_type=go.Scatter, **kwargs):
         fig.add_trace(
             trace_type(
-                x=df3days['hour_starts_at'],
-                y=y_values[quantity.label],
-                name=quantity.label,
+                x=df3days[time],
+                y=y_values[quantity],
+                name=quantity,
                 legend=f'legend{subplot_row}',
-                hovertemplate=f"{quantity.label}: %{{y:.3f}} {quantity.unit}<extra></extra>",
+                hovertemplate=f"{quantity}: %{{y:.3f}} {quantity.unit}<extra></extra>",
                 **kwargs
             ),
             row=subplot_row, col=1
@@ -51,9 +51,9 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=None):
 
     # Subplot 2: Power Flows
     add_trace_to_fig(2, net_household, line=dict(color='grey', dash='dash'))
-    add_trace_to_fig(2, battery_charge, trace_type=go.Bar, marker_color='forestgreen')
-    add_trace_to_fig(2, battery_discharge, trace_type=go.Bar, marker_color='firebrick',
-                     y_values=-df3days[[battery_discharge.label]])  # minus 1 to plot discharge negatively
+    add_trace_to_fig(2, charge, trace_type=go.Bar, marker_color='forestgreen')
+    add_trace_to_fig(2, discharge, trace_type=go.Bar, marker_color='firebrick',
+                     y_values=-df3days[[discharge]])  # minus 1 to plot discharge negatively
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
 
     # Subplot 3: Prices
@@ -61,7 +61,7 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=None):
     add_trace_to_fig(3, net_sell_price, line=dict(color='blue'))
 
     # Subplot 4: Cost Comparison (Line)
-    add_trace_to_fig(4, cost_no_battery, line=dict(color='gray', dash='dash'))
+    add_trace_to_fig(4, cost_wo_battery, line=dict(color='gray', dash='dash'))
     add_trace_to_fig(4, cost_with_battery, line=dict(color='indigo'))
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=4, col=1)
 

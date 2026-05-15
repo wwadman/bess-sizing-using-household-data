@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
 from .constants import (
-    EFFICIENCY, net_household, battery_charge, battery_discharge,
-    soc, cost_no_battery, cost_with_battery, net_buy_price, net_sell_price
+    EFFICIENCY, net_household, charge, discharge,
+    soc, cost_wo_battery, cost_with_battery, net_buy_price, net_sell_price, time,
+    production
 )
 
 def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
@@ -31,27 +32,27 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
         current_soc -= discharge_kwh / EFFICIENCY
 
         # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
-        price_this_hour = now[net_buy_price.label] if now[net_household.label] > 0 else now[net_sell_price.label]
-        cost_no_batt = now[net_household.label] * price_this_hour
+        price_this_hour = now[net_buy_price] if now[net_household] > 0 else now[net_sell_price]
+        cost_no_batt = now[net_household] * price_this_hour
 
         # Cost with battery: (net_kwh + charge - discharge) * relevant_price
-        new_net_kwh = now[net_household.label] + charge_kwh - discharge_kwh
-        price_this_hour = now[net_buy_price.label] if new_net_kwh > 0 else now[net_sell_price.label]
+        new_net_kwh = now[net_household] + charge_kwh - discharge_kwh
+        price_this_hour = now[net_buy_price] if new_net_kwh > 0 else now[net_sell_price]
         cost_with_batt = new_net_kwh * price_this_hour
 
         total_savings += cost_no_batt - cost_with_batt
 
         simulation_logs.append({
-            'hour_starts_at': now['hour_starts_at'],
-            soc.label: current_soc,
-            battery_charge.label: charge_kwh,
-            battery_discharge.label: discharge_kwh,
-            cost_no_battery.label: cost_no_batt,
-            cost_with_battery.label: cost_with_batt
+            time: now[time],
+            soc: current_soc,
+            charge: charge_kwh,
+            discharge: discharge_kwh,
+            cost_wo_battery: cost_no_batt,
+            cost_with_battery: cost_with_batt
         })
 
     df_logs = pd.DataFrame(simulation_logs)
-    sim_df = sim_df.merge(df_logs, on="hour_starts_at", how="left", suffixes=("", "_logged"))
+    sim_df = sim_df.merge(df_logs, on=time, how="left", suffixes=("", "_logged"))
     return total_savings, sim_df
 
 
@@ -59,7 +60,7 @@ def get_now_and_known_future(i, sim_df):
     now = sim_df.iloc[i]  # now denotes current hour in the simulation
 
     # Dynamic horizon: rest of today + (if past 1pm) tomorrow
-    current_hour = now["hour_starts_at"].hour
+    current_hour = now[time].hour
     hours_until_midnight = 24 - current_hour
     horizon = hours_until_midnight
     if current_hour >= 13:
@@ -69,7 +70,7 @@ def get_now_and_known_future(i, sim_df):
 
 
 def strategy_arbitrage(row, future_df, soc, capacity_kwh, rate_kw):
-    actual_solar = row['production_kwh'] if pd.notna(row['production_kwh']) else 0.0
+    actual_solar = row[production] if pd.notna(row[production]) else 0.0
     charge_kwh = min(actual_solar, rate_kw)
 
     # Calculate effective prices including taxes and VAT
@@ -89,8 +90,8 @@ def strategy_optimal_mpc(row, future_df, soc, capacity_kwh, rate_kw,
     n = len(future_df)
     
     # Calculate effective buy and sell prices including taxes and VAT
-    buy = future_df[net_buy_price.label].values
-    sell = future_df[net_sell_price.label].values
+    buy = future_df[net_buy_price].values
+    sell = future_df[net_sell_price].values
 
     plan_c = np.zeros(n)
     plan_d = np.zeros(n)
@@ -151,7 +152,7 @@ def strategy_optimal_mpc(row, future_df, soc, capacity_kwh, rate_kw,
 #
 #
 # def strategy_solar_plus_low_price(row, future_df, soc, capacity_kwh, rate_kw):
-#     charge_kwh = row['production_kwh'] if pd.notna(row['production_kwh']) else 0.0
+#     charge_kwh = row[production.label] if pd.notna(row[production.label]) else 0.0
 #
 #     if row['consumption_unit_price_eur'] < 0.05:
 #         charge_kwh = rate_kw

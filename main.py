@@ -12,7 +12,7 @@ from tibber_insights.visualization import (
     plot_battery_behavior
 )
 
-PLOT = True
+PLOT = False
 SANITY_CHECK = True
 
 def main():
@@ -33,6 +33,8 @@ def main():
     # -- Battery simulation --------------------------------------------------------
     capacities = [0, 2, 5, 10, 20]   # [2, 5, 10, 20]
     rates = [0.8, 1.2, 2.4, 4]       #
+    capacities = [20]   # [2, 5, 10, 20]
+    rates = [4]       #
 
     baseline_bill = forecast['net_bill_2027_eur']
 
