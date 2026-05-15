@@ -44,49 +44,50 @@ def strategy_optimal_mpc(row, future_df, current_soc, capacity_kwh, max_rate_kw,
     # We want to sell the energy we already have at the highest possible future prices.
     remaining_to_discharge = current_soc
     # Sort hours by sell price in descending order (note that the order of buy prices is exactly the same!)
-    profitable_sell_hours = np.argsort(sell_prices)[::-1]
+    most_expensive_sell_hours = np.argsort(sell_prices)[::-1]
     
-    for hour_idx in profitable_sell_hours:
-        if remaining_to_discharge <= 0:
+    for hour_idx in most_expensive_sell_hours:
+        if remaining_to_discharge <= 0.0001:  # Avoid "numerical error events" 
             break
         
-        # Max energy we can get out of the battery (considering discharge rate and efficiency)
-        # Note: 'd = remaining_to_discharge * round_trip_efficiency' means 'remaining_to_discharge' is the energy
-        # in the battery, 'd' is what actually reaches the grid.
+        # Max out energy we can get out of the battery (considering discharge rate and efficiency)
+        # Note: - 
+        # - 'remaining_to_discharge' is the energy in the battery
+        # - 'remaining_to_discharge * round_trip_efficiency' is what actually reaches the grid.
         can_discharge = min(max_rate_kw, remaining_to_discharge * round_trip_efficiency)
         discharge_plan[hour_idx] += can_discharge
         remaining_to_discharge -= can_discharge / round_trip_efficiency
 
     # Track available capacity and space in each hour after the initial plan
-    # c_avail/d_avail is the remaining power bandwidth (kW) for additional charging/discharging
-    charge_bandwidth_avail = max_rate_kw - charge_plan
+    # charge_bandwidth_avail/discharge_bandwidth_avail is the remaining power bandwidth (kW) for additional charging/discharging
+    charge_bandwidth_avail = max_rate_kw - charge_plan  # Todo: charge_plan is always zero at this early stage of the code, right??
     discharge_bandwidth_avail = max_rate_kw - discharge_plan
     # available_storage_space is the kWh we can still add to the battery
     available_storage_space = capacity_kwh - current_soc
 
     # --- Step 2: Optimize Arbitrage (Charge low, Sell high) ---
-    # We look for pairs of (charge_hour, discharge_hour) where we can profit.
-    # charge_hour must come before discharge_hour.
+    # We look for pairs of (h_ch, h_dis) where we can profit.
+    # h_ch must come before h_dis.
     
     # Hours sorted by buy price (lowest first)
-    cheapest_buy_hours = np.argsort(buy_prices)
-    # Hours sorted by sell price (highest first)
-    expensive_sell_hours = np.argsort(sell_prices)[::-1]
+    cheapest_buy_hours = np.argsort(buy_prices)  # Todo: this is just most_expensive_sell_hours flipped, right?
 
-    for h_dis in expensive_sell_hours:
+    for h_dis in most_expensive_sell_hours:
         for h_ch in cheapest_buy_hours:
-            # Only consider charging BEFORE discharging
+            # Only consider charging BEFORE discharging (h_ch < h_dis)
             if h_ch >= h_dis:
                 continue
-            
+
+            # Todo: we are making a mistake directly below by assuming that discharging will "yield profit based on sell_prices", it can also _avoid_ buy price ,
+            # Todo: similarly, charging can also "lower profits based on sell_price" (when Net Household is negative) instead of "costing an amount that is baes on buy_prices"
             # Check if arbitrage is profitable considering efficiency losses
-            if round_trip_efficiency * sell_prices[h_dis] - buy_prices[h_ch] <= 0:
-                # Since we sorted by cheapest buy first, if this one isn't profitable, 
-                # no subsequent (more expensive) buy hours will be profitable for this h_dis.
+            if round_trip_efficiency * sell_prices[h_dis] <= buy_prices[h_ch]:
+                # Since we sorted by cheapest buy first, if this one isn't profitable,
+                # no later (more expensive) buy hours will be profitable for this h_dis.
                 break
             
             # Calculate how much we can move in this cycle.
-            # Limited by: charge rate at h_ch, discharge rate at h_dis, and battery capacity.
+            # Limited by: charge_bandwidth_avail at h_ch, discharge_bandwidth_avail at h_dis, and available_storage_space.
             transfer_amount = min(
                 charge_bandwidth_avail[h_ch], 
                 discharge_bandwidth_avail[h_dis] / round_trip_efficiency, 

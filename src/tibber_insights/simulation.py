@@ -9,7 +9,7 @@ from .constants import (
 def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
     sim_df = sim_df.copy()  # To avoid adding columns to the original DataFrame, for every strategy, rate and capacity
 
-    current_soc = 0
+    current_soc = capacity_kwh/2  # Just to enable sanity-checking/debugging during the first time steps of the simulation
     total_savings = 0.0
     
     simulation_logs = []

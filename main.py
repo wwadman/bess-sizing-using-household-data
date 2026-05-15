@@ -12,15 +12,15 @@ PLOT = False
 SANITY_CHECK = True
 
 def main():
-    pd.set_option('display.max_rows', 15)
-    pd.set_option('display.max_columns', 20)
-
-    # set max number chars per row when pandas is printing
-    pd.set_option('display.max_colwidth', 100)
+    pd.set_option(
+        'display.max_rows', 15,
+        'display.max_columns', 20,
+        'display.max_colwidth', 100,
+        'display.width', 200
+    )
 
     # -- Load data -----------------------------------------------------------------
     df = load_monthly_files("csv/data-*.csv")
-
     df.to_csv("tibber_all_months_merged.csv", index=False)
 
     # -- 2027 bill forecast --------------------------------------------------------
