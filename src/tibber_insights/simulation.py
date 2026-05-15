@@ -20,9 +20,9 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
         charge_kwh, discharge_kwh = strategy_fn(
             row=now,
             future_df=future_df,
-            soc=current_soc,
+            current_soc=current_soc,
             capacity_kwh=capacity_kwh,
-            rate_kw=rate_kw,
+            max_rate_kw=rate_kw,
         )
 
         charge_kwh = max(0, min(charge_kwh, rate_kw, capacity_kwh - current_soc))
