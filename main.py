@@ -55,7 +55,7 @@ def main():
             )
 
             if SANITY_CHECK and strategy_name == "optimal_mpc":
-                plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3)
+                plot_battery_behavior(sim_df, capacity, rate, strategy_name)
 
             sim_results.append({
                 'strategy': strategy_name,

@@ -43,7 +43,7 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=None):
             ),
             row=subplot_row, col=1
         )
-        fig.update_yaxes(title_text=quantity.unit, row=subplot_row, col=1)
+        fig.update_yaxes(title_text=quantity.unit, fixedrange=True, row=subplot_row, col=1)
 
     # Subplot 1: SOC
     add_trace_to_fig(1, soc, line=dict(color='royalblue'), fill='tozeroy', showlegend=False)
