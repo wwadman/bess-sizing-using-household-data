@@ -1,13 +1,5 @@
 from .constants import ENERGIEBELASTING, INKOOPVERGOEDING, VAT_RATE, EUR, KWH, net_buy_price, net_sell_price
 
-
-def calculate_net_price(unit_price, buy_or_sell):
-    """Calculates net buy or sell price including VAT."""
-    assert buy_or_sell in ['buy', 'sell'], f"Invalid buy_or_sell value: {buy_or_sell}. Must be 'buy' or 'sell'."
-    if buy_or_sell == 'buy':
-        unit_price = unit_price + ENERGIEBELASTING + INKOOPVERGOEDING
-    return unit_price * (1 + VAT_RATE)
-
 def forecast_2027_bill(df):
     """Calculate the 2027 bill using the last 365-day profile."""
     annual_consumed = df['consumption_kwh'].sum()

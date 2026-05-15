@@ -1,16 +1,10 @@
 import pandas as pd
-import plotly.express as px
 from itertools import product
 from tibber_insights.data_loader import load_monthly_files
-from tibber_insights.constants import (
-    net_household, battery_charge, battery_discharge,
-    soc, net_buy_price, net_sell_price, cost_no_battery, cost_with_battery,
-    EUR, KW, KWH, EUR_KWH
-)
-from tibber_insights.billing import forecast_2027_bill, calculate_net_price
+from tibber_insights.constants import net_household, soc, EUR
+from tibber_insights.billing import forecast_2027_bill
 from tibber_insights.simulation import (
     run_battery_simulation,
-    strategy_arbitrage,
     strategy_optimal_mpc
 )
 from tibber_insights.visualization import (
@@ -30,28 +24,6 @@ def main():
 
     # -- Load data -----------------------------------------------------------------
     df = load_monthly_files("csv/data-*.csv")
-    df = df.drop_duplicates(subset=['hour_starts_at']).sort_values('hour_starts_at')
-
-    # Clean unit prices
-    # Until start of 2026 Tibber df.consumption_unit_price_eur == df.production_unit_price_eur
-    # From start of 2026 Tibber df.consumption_unit_price_eur == df.production_unit_price_eur + INKOOPVERGOEDING
-    # This is super confusing, since we want to mimic 2027 onwards, which has IV for consumption only
-    # So we will use only the production_unit_price_eur and add the IV (and EB and BTW) to obtain the consumption_unit_price_eur_net
-    df['unit_price'] = df.production_unit_price_eur
-    df[net_buy_price.label] = calculate_net_price(df['unit_price'], 'buy')
-    df[net_sell_price.label] = calculate_net_price(df['unit_price'], 'sell')
-    df.drop(columns=['consumption_unit_price_eur', 'production_unit_price_eur', 'unit_price'], inplace=True)
-
-    # Focus all analysis on the very last 365 * 24 hours
-    recent_hours = sorted(df['hour_starts_at'].unique())[-365 * 24:]
-    df = df[df['hour_starts_at'].isin(recent_hours)].copy()
-
-    # Calculate expected consumption and production as rolling averages of the past 4 weeks
-    # (same hour of the day and day of the week)
-    n_weeks_to_look_back = 4
-    look_back_hours_for_rolling_mean = [24 * 7 * (i + 1) for i in range(n_weeks_to_look_back)]
-    for col, exp_col in [('consumption_kwh', 'exp_cons'), ('production_kwh', 'exp_prod')]:
-        df[exp_col] = df[col].shift(look_back_hours_for_rolling_mean).mean(axis=1)
 
     df.to_csv("tibber_all_months_merged.csv", index=False)
 

@@ -82,38 +82,6 @@ def strategy_arbitrage(row, future_df, soc, capacity_kwh, rate_kw):
 
     return charge_kwh, discharge_kwh
 
-#
-# def strategy_greedy(row, future_df, soc, capacity_kwh, rate_kw):
-#     price = row['consumption_unit_price_eur']
-#     day_prices = future_df['consumption_unit_price_eur']
-#
-#     low_threshold = day_prices.quantile(0.2)
-#     high_threshold = day_prices.quantile(0.8)
-#
-#     if price <= low_threshold:
-#         charge_kwh = rate_kw
-#         discharge_kwh = 0
-#     elif price >= high_threshold:
-#         charge_kwh = 0
-#         discharge_kwh = soc
-#     else:
-#         charge_kwh = 0
-#         discharge_kwh = 0
-#
-#     return charge_kwh, discharge_kwh
-#
-#
-# def strategy_solar_plus_low_price(row, future_df, soc, capacity_kwh, rate_kw):
-#     charge_kwh = row['production_kwh'] if pd.notna(row['production_kwh']) else 0.0
-#
-#     if row['consumption_unit_price_eur'] < 0.05:
-#         charge_kwh = rate_kw
-#
-#     future_price = future_df['consumption_unit_price_eur'].max()
-#     discharge_kwh = soc if future_price > 0.25 else 0
-#
-#     return charge_kwh, discharge_kwh
-
 
 def strategy_optimal_mpc(row, future_df, soc, capacity_kwh, rate_kw,
                          horizon_hours=24, eta=0.90):
@@ -160,3 +128,35 @@ def strategy_optimal_mpc(row, future_df, soc, capacity_kwh, rate_kw,
             break
 
     return float(plan_c[0]), float(plan_d[0])
+
+#
+# def strategy_greedy(row, future_df, soc, capacity_kwh, rate_kw):
+#     price = row['consumption_unit_price_eur']
+#     day_prices = future_df['consumption_unit_price_eur']
+#
+#     low_threshold = day_prices.quantile(0.2)
+#     high_threshold = day_prices.quantile(0.8)
+#
+#     if price <= low_threshold:
+#         charge_kwh = rate_kw
+#         discharge_kwh = 0
+#     elif price >= high_threshold:
+#         charge_kwh = 0
+#         discharge_kwh = soc
+#     else:
+#         charge_kwh = 0
+#         discharge_kwh = 0
+#
+#     return charge_kwh, discharge_kwh
+#
+#
+# def strategy_solar_plus_low_price(row, future_df, soc, capacity_kwh, rate_kw):
+#     charge_kwh = row['production_kwh'] if pd.notna(row['production_kwh']) else 0.0
+#
+#     if row['consumption_unit_price_eur'] < 0.05:
+#         charge_kwh = rate_kw
+#
+#     future_price = future_df['consumption_unit_price_eur'].max()
+#     discharge_kwh = soc if future_price > 0.25 else 0
+#
+#     return charge_kwh, discharge_kwh

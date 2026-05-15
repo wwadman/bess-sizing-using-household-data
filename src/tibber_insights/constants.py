@@ -1,3 +1,4 @@
+from itertools import product
 from types import SimpleNamespace
 
 # Units
@@ -19,9 +20,11 @@ VAT_RATE = 0.21  # 21% BTW
 EFFICIENCY = 0.90  # Round-trip
 
 # Column Names / Plot Labels
-net_household = quantity("Net Household", KW)
-battery_charge = quantity("Charge", KW)
-battery_discharge = quantity("Discharge", KW)
+consumption = quantity("Consumption", KWH)
+production = quantity("Production", KWH)
+net_household = quantity("Net Household", KWH)
+battery_charge = quantity("Charge", KWH)
+battery_discharge = quantity("Discharge", KWH)
 soc = quantity("SOC", KWH)
 net_buy_price = quantity("Net buy price", EUR_KWH)
 net_sell_price = quantity("Net sell price", EUR_KWH)
