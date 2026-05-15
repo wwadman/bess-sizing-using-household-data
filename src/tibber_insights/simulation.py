@@ -74,11 +74,11 @@ def strategy_arbitrage(row, future_df, soc, capacity_kwh, rate_kw):
     charge_kwh = min(actual_solar, rate_kw)
 
     # Calculate effective prices including taxes and VAT
-    if row['net_buy_price'] <= future_df['net_buy_price'].quantile(0.25):
+    if row[net_buy_price] <= future_df[net_buy_price].quantile(0.25):
         charge_kwh = rate_kw
 
     discharge_kwh = 0.0
-    if soc > 0 and row['net_buy_price'] >= future_df['net_buy_price'].quantile(0.75):
+    if soc > 0 and row[net_buy_price] >= future_df[net_buy_price].quantile(0.75):
         discharge_kwh = rate_kw
 
     return charge_kwh, discharge_kwh
@@ -152,7 +152,7 @@ def strategy_optimal_mpc(row, future_df, soc, capacity_kwh, rate_kw,
 #
 #
 # def strategy_solar_plus_low_price(row, future_df, soc, capacity_kwh, rate_kw):
-#     charge_kwh = row[production.label] if pd.notna(row[production.label]) else 0.0
+#     charge_kwh = row[production] if pd.notna(row[production]) else 0.0
 #
 #     if row[consumption_unit_price_eur] < 0.05:
 #         charge_kwh = rate_kw
