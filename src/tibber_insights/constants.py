@@ -43,6 +43,7 @@ net_buy_price = Quantity("Net buy price", EUR_KWH)
 net_sell_price = Quantity("Net sell price", EUR_KWH)
 cost_wo_battery = Quantity("Cost w/o Battery", EUR)
 cost_with_battery = Quantity("Cost with Battery", EUR)
+cumulative_savings = Quantity("Cumulative savings", EUR)
 
 if __name__ == "__main__":
     print(f"{net_household.l} ({net_household.unit})")

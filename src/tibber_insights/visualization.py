@@ -4,7 +4,7 @@ from plotly.subplots import make_subplots
 from .constants import (
     net_household, charge, discharge,
     soc, net_buy_price, net_sell_price, cost_wo_battery, cost_with_battery,
-    EUR, KW, KWH, time
+    EUR, KW, KWH, time, cumulative_savings
 )
 
 def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
@@ -23,10 +23,12 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
             "Buy/Sell Net Prices",
             "Cost Comparison"
         ),
-        row_heights=[0.1, 0.2, 0.1, 0.1]
+        row_heights=[0.1, 0.2, 0.1, 0.1],
+        specs=[[{}], [{}], [{}], [{"secondary_y": True}]]
     )
 
     def add_trace_to_fig(subplot_row, quantity, y_values=sim_df, trace_type=go.Scatter, **kwargs):
+        secondary_y = kwargs.pop("secondary_y", False)
         fig.add_trace(
             trace_type(
                 x=sim_df[time],
@@ -36,9 +38,10 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
                 hovertemplate=f"{quantity}: %{{y:.3f}} {quantity.unit}<extra></extra>",
                 **kwargs
             ),
-            row=subplot_row, col=1
+            row=subplot_row, col=1,
+            secondary_y=secondary_y
         )
-        fig.update_yaxes(title_text=quantity.unit, fixedrange=True, row=subplot_row, col=1)
+        fig.update_yaxes(title_text=quantity.unit, fixedrange=True, row=subplot_row, col=1, secondary_y=secondary_y)
 
     # Subplot 1: SOC
     add_trace_to_fig(1, soc, line=dict(color='royalblue'), fill='tozeroy', showlegend=False)
@@ -59,6 +62,8 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
     add_trace_to_fig(4, cost_wo_battery, line=dict(color='gray', dash='dash'))
     add_trace_to_fig(4, cost_with_battery, line=dict(color='indigo'))
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=4, col=1)
+    add_trace_to_fig(4, cumulative_savings, secondary_y=True)
+
 
     fig.update_layout(
         height=900,

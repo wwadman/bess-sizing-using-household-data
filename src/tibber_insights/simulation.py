@@ -3,7 +3,7 @@ import pandas as pd
 from .constants import (
     EFFICIENCY, net_household, charge, discharge,
     soc, cost_wo_battery, cost_with_battery, net_buy_price, net_sell_price, time,
-    production
+    production, cumulative_savings
 )
 
 def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
@@ -52,6 +52,7 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
         })
 
     df_logs = pd.DataFrame(simulation_logs)
+    df_logs[cumulative_savings] = np.cumsum(df_logs[cost_wo_battery] - df_logs[cost_with_battery])
     sim_df = sim_df.merge(df_logs, on=time, how="left", suffixes=("", "_logged"))
     return total_savings, sim_df
 
