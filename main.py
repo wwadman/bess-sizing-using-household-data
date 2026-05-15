@@ -3,14 +3,10 @@ from itertools import product
 from tibber_insights.data_loader import load_monthly_files
 from tibber_insights.constants import net_household, soc, EUR
 from tibber_insights.billing import forecast_2027_bill
-from tibber_insights.simulation import (
-    run_battery_simulation,
-    strategy_optimal_mpc
-)
-from tibber_insights.visualization import (
-    plot_battery_savings_surface,
-    plot_battery_behavior
-)
+from tibber_insights.simulation import run_battery_simulation
+from tibber_insights.strategies import strategy_optimal_mpc
+from tibber_insights.visualization import plot_battery_savings_surface, plot_battery_behavior
+
 
 PLOT = False
 SANITY_CHECK = True
@@ -55,7 +51,7 @@ def main():
             )
 
             if SANITY_CHECK and strategy_name == "optimal_mpc":
-                plot_battery_behavior(sim_df, capacity, rate, strategy_name)
+                plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=10)
 
             sim_results.append({
                 'strategy': strategy_name,
