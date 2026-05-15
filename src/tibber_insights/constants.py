@@ -1,6 +1,3 @@
-from itertools import product
-from types import SimpleNamespace
-
 # Units
 EUR = "€"
 KW = "kW"
@@ -25,10 +22,19 @@ VAT_RATE = 0.21  # 21% BTW
 
 EFFICIENCY = 0.90  # Round-trip
 
-# Column Names / Plot Labels
-time = "Timestamp"  # Does not have a unit so it is not a Quantity
+# Column names of original dataframe
+time = "Timestamp"  # Does not have a unit, so it is not a Quantity
 consumption = Quantity("Consumption", KWH)
+consumption_unit_price_eur = Quantity("Consumption unit price", EUR_KWH)
+consumption_cost_eur = Quantity("Consumption cost", EUR)
 production = Quantity("Production", KWH)
+production_unit_price_eur = Quantity("Production unit price", EUR_KWH)
+production_profit_eur = Quantity("Production profit", EUR)
+unit_price = Quantity("Unit price", EUR_KWH)
+
+# Names of columns introduced when executing strategies
+expected_consumption = Quantity("Expected consumption", KWH)
+expected_production = Quantity("Expected production", KWH)
 net_household = Quantity("Net Household", KWH)
 charge = Quantity("Charge", KWH)
 discharge = Quantity("Discharge", KWH)
