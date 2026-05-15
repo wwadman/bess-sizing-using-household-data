@@ -27,9 +27,9 @@ def strategy_optimal_mpc(row, future_df, current_soc, capacity_kwh, max_rate_kw,
     1. Initial Discharge: Planning to discharge the current stored energy (SOC) at the most 
        profitable future hours (highest sell prices).
     2. Arbitrage Optimization: Planning charge-discharge cycles by pairing low-price hours 
-       with subsequent high-price hours, provided it's profitable after efficiency losses.
+       with later high-price hours, provided it's profitable after efficiency losses.
     """
-    future_df = future_df.iloc[:horizon_hours]
+
     num_hours = len(future_df)
 
     # Extract buy and sell prices for the optimization horizon
@@ -43,7 +43,7 @@ def strategy_optimal_mpc(row, future_df, current_soc, capacity_kwh, max_rate_kw,
     # --- Step 1: Optimize discharge of the current SOC ---
     # We want to sell the energy we already have at the highest possible future prices.
     remaining_to_discharge = current_soc
-    # Sort hours by sell price in descending order
+    # Sort hours by sell price in descending order (note that the order of buy prices is exactly the same!)
     profitable_sell_hours = np.argsort(sell_prices)[::-1]
     
     for hour_idx in profitable_sell_hours:
@@ -51,7 +51,7 @@ def strategy_optimal_mpc(row, future_df, current_soc, capacity_kwh, max_rate_kw,
             break
         
         # Max energy we can get out of the battery (considering discharge rate and efficiency)
-        # Note: 'd = remaining_soc * efficiency' means 'remaining_soc' is the energy 
+        # Note: 'd = remaining_to_discharge * round_trip_efficiency' means 'remaining_to_discharge' is the energy
         # in the battery, 'd' is what actually reaches the grid.
         can_discharge = min(max_rate_kw, remaining_to_discharge * round_trip_efficiency)
         discharge_plan[hour_idx] += can_discharge

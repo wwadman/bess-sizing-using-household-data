@@ -18,7 +18,7 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
         shared_xaxes=True,
         vertical_spacing=0.05,
         subplot_titles=(
-            f"SOC of battery ({capacity} {KWH}, {rate} {KW}) at end of time step",
+            f"SOC of battery ({capacity} {KWH}, {rate} {KW}) at end of the time step",
             f"Charging strategy: {strategy_name}",
             "Buy/Sell Net Prices",
             "Cost Comparison"
