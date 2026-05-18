@@ -161,16 +161,122 @@ def strategy_optimal_mpc2(row, future_df, current_soc, capacity_kwh, max_rate_kw
      in 1 dataframe net_discharge_values for better understanding"""
 
     net_discharge_values = _get_net_discharge_values(future_df)
-    remaining_to_discharge = current_soc
+    net_discharge_values['charge_bandwidth_avail'] = float(max_rate_kw)
+    net_discharge_values['discharge_bandwidth_avail'] = float(max_rate_kw)
+
+    current_soc_after_discharge = current_soc
+    current_time = future_df[TIME].iloc[0]
     for i, slot in net_discharge_values.iterrows():
-        can_discharge = min(slot[EXPECTED_MAX_CONSUMPTION], remaining_to_discharge * round_trip_efficiency)
+        # Discharge is limited by remaining SOC and available bandwidth for that hour
+        h = i[1]
+        h_bw_info = net_discharge_values.loc[(slice(None), h), 'discharge_bandwidth_avail']
+        avail_bw = h_bw_info.iloc[0] if not h_bw_info.empty else 0.0
+
+        can_discharge = min(slot[EXPECTED_MAX_CONSUMPTION], current_soc_after_discharge * round_trip_efficiency, avail_bw)
+        
         net_discharge_values.at[i, 'Discharge plan'] = can_discharge
-        remaining_to_discharge -= can_discharge / round_trip_efficiency
+        
+        # Update both charge and discharge bandwidth for this hour across all slots
+        h_mask = net_discharge_values.index.get_level_values(TIME) == h
+        net_discharge_values.loc[h_mask, 'discharge_bandwidth_avail'] -= can_discharge
+        net_discharge_values.loc[h_mask, 'charge_bandwidth_avail'] -= can_discharge
+        
+        current_soc_after_discharge -= can_discharge / round_trip_efficiency
 
-    net_discharge_values['charge_bandwidth_avail'] = max_rate_kw
-    net_discharge_values['discharge_bandwidth_avail'] = max_rate_kw - net_discharge_values['Discharge plan']
+    # Arbitrage logic
+    charge_household = (future_df[[TIME, NET_SELL_PRICE, EXPECTED_PRODUCTION]]
+                        .rename(columns={NET_SELL_PRICE: 'Cost', EXPECTED_PRODUCTION: 'Available amount'}))
+    charge_grid = (future_df[[TIME, NET_BUY_PRICE]]
+                   .rename(columns={NET_BUY_PRICE: 'Cost'}))
+    charge_household.insert(0, 'Charge from', 'Household')
+    charge_grid.insert(0, 'Charge from', 'Grid')
+    charge_grid.insert(3, 'Available amount', np.inf)
 
-    pass
+    charge_slots = (pd.concat([charge_household, charge_grid])
+                    .sort_values(by='Cost', ascending=True)
+                    .set_index(['Charge from', TIME]))
+
+    net_discharge_values['Arbitrage discharge plan'] = 0.0
+    charge_slots['Charge plan'] = 0.0
+    available_storage_space = capacity_kwh - current_soc
+    current_time = future_df[TIME].iloc[0]
+
+    for d_idx, d_slot in net_discharge_values.iterrows():
+        for c_idx, c_slot in charge_slots.iterrows():
+            h_dis = d_idx[1]
+            h_ch = c_idx[1]
+
+            if h_ch >= h_dis:
+                continue
+
+            if round_trip_efficiency * d_slot[NET_VALUE] <= c_slot['Cost']:
+                break
+
+            # Re-calculate transfer_amount based on CURRENT bandwidth
+            h_ch_bw_info = net_discharge_values.loc[(slice(None), h_ch), 'charge_bandwidth_avail']
+            ch_bw = h_ch_bw_info.iloc[0] if not h_ch_bw_info.empty else 0.0
+            
+            h_dis_bw_info = net_discharge_values.loc[(slice(None), h_dis), 'discharge_bandwidth_avail']
+            dis_bw = h_dis_bw_info.iloc[0] if not h_dis_bw_info.empty else 0.0
+
+            transfer_amount = min(
+                c_slot['Available amount'],
+                dis_bw / round_trip_efficiency,
+                available_storage_space,
+                ch_bw
+            )
+
+            if transfer_amount <= 0.0001:
+                continue
+
+            charge_slots.at[c_idx, 'Charge plan'] += transfer_amount
+            net_discharge_values.at[d_idx, 'Arbitrage discharge plan'] += transfer_amount * round_trip_efficiency
+            
+            charge_slots.at[c_idx, 'Available amount'] -= transfer_amount
+
+            # Update bandwidth for both hours across all slots
+            # Important: at h_ch we CHARGE (increases SOC), at h_dis we DISCHARGE (decreases SOC)
+            # Bandwidth is shared between charging and discharging.
+            h_ch_mask = net_discharge_values.index.get_level_values(TIME) == h_ch
+            net_discharge_values.loc[h_ch_mask, 'charge_bandwidth_avail'] -= transfer_amount
+            net_discharge_values.loc[h_ch_mask, 'discharge_bandwidth_avail'] -= transfer_amount
+
+            h_dis_mask = net_discharge_values.index.get_level_values(TIME) == h_dis
+            net_discharge_values.loc[h_dis_mask, 'charge_bandwidth_avail'] -= transfer_amount * round_trip_efficiency
+            net_discharge_values.loc[h_dis_mask, 'discharge_bandwidth_avail'] -= transfer_amount * round_trip_efficiency
+
+            available_storage_space -= transfer_amount
+            if available_storage_space <= 0.0001:
+                break
+        if available_storage_space <= 0.0001:
+            break
+
+    current_time = future_df[TIME].iloc[0]
+    charge_now = charge_slots.xs(current_time, level=TIME)['Charge plan'].sum()
+    discharge_now = (net_discharge_values.xs(current_time, level=TIME)['Discharge plan'].sum() +
+                     net_discharge_values.xs(current_time, level=TIME)['Arbitrage discharge plan'].sum())
+
+    # Netting logic: If we both charge and discharge in the same hour, net them out.
+    # This ensures we don't have simultaneous charge and discharge in the final plan.
+    if charge_now > 0 and discharge_now > 0:
+        # Convert both to energy reaching/leaving the BATTERY
+        # charge_now is kWh from grid/solar to battery (pre-efficiency)
+        # discharge_now is kWh from battery to grid/household (post-efficiency)
+        
+        # Internal battery movement:
+        batt_charge = charge_now * round_trip_efficiency
+        batt_discharge = discharge_now / round_trip_efficiency
+        
+        if batt_charge > batt_discharge:
+            batt_net = batt_charge - batt_discharge
+            charge_now = batt_net / round_trip_efficiency
+            discharge_now = 0.0
+        else:
+            batt_net = batt_discharge - batt_charge
+            discharge_now = batt_net * round_trip_efficiency
+            charge_now = 0.0
+
+    return float(charge_now), float(discharge_now)
 
 
 def strategy_greedy(row, future_df, current_soc, capacity_kwh, max_rate_kw):

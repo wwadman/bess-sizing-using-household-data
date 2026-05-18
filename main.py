@@ -36,7 +36,7 @@ def main():
 
     strategies = {
         # "arbitrage": strategy_arbitrage,
-        "optimal_mpc": strategy_optimal_mpc,
+        # "optimal_mpc": strategy_optimal_mpc,
         "optimal_mpc2": strategy_optimal_mpc2,
     }
 
@@ -51,7 +51,7 @@ def main():
                 strategy_fn=strategy_fn,
             )
 
-            if SANITY_CHECK and strategy_name == "optimal_mpc":
+            if SANITY_CHECK:
                 plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=10)
 
             sim_results.append({
