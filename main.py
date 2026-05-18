@@ -1,10 +1,10 @@
 import pandas as pd
 from itertools import product
 from tibber_insights.data_loader import load_monthly_files
-from tibber_insights.constants import net_household, soc, EUR
+from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR
 from tibber_insights.billing import forecast_2027_bill
 from tibber_insights.simulation import run_battery_simulation
-from tibber_insights.strategies import strategy_optimal_mpc
+from tibber_insights.strategies import strategy_optimal_mpc, strategy_optimal_mpc2
 from tibber_insights.visualization import plot_battery_savings_surface, plot_battery_behavior
 
 
@@ -37,6 +37,7 @@ def main():
     strategies = {
         # "arbitrage": strategy_arbitrage,
         "optimal_mpc": strategy_optimal_mpc,
+        "optimal_mpc2": strategy_optimal_mpc2,
     }
 
     sim_results = []
@@ -74,11 +75,11 @@ def main():
     )[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
 
     # Rename columns for prettier display
-    display_df.columns = ['Strategy', f'Cap ({soc.unit})', f'Rate ({net_household.unit})', f'Savings ({EUR})', f'Net Bill ({EUR})', 'Savings %']
+    display_df.columns = ['Strategy', f'Cap ({SOC.unit})', f'Rate ({NET_HOUSEHOLD.unit})', f'Savings ({EUR})', f'Net Bill ({EUR})', 'Savings %']
 
     sim_table = display_df.to_string(index=False, justify='center', formatters={
-        f'Cap ({soc.unit})': '{:.0f}'.format,
-        f'Rate ({net_household.unit})': '{:.1f}'.format,
+        f'Cap ({SOC.unit})': '{:.0f}'.format,
+        f'Rate ({NET_HOUSEHOLD.unit})': '{:.1f}'.format,
         f'Savings ({EUR})': '{:,.2f}'.format,
         f'Net Bill ({EUR})': '{:,.2f}'.format,
         'Savings %': '{:.1f}%'.format,
@@ -98,11 +99,11 @@ def main():
         print("╠" + "═" * 88 + "╣")
 
         best_display = best_by_strategy[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'savings_pct', 'net_bill_eur']]
-        best_display.columns = ['Strategy', f'Cap ({soc.unit})', f'Rate ({net_household.unit})', f'Savings ({EUR})', 'Savings %', f'Net Bill ({EUR})']
+        best_display.columns = ['Strategy', f'Cap ({SOC.unit})', f'Rate ({NET_HOUSEHOLD.unit})', f'Savings ({EUR})', 'Savings %', f'Net Bill ({EUR})']
 
         best_table = best_display.to_string(index=False, justify='center', formatters={
-            f'Cap ({soc.unit})': '{:.0f}'.format,
-            f'Rate ({net_household.unit})': '{:.1f}'.format,
+            f'Cap ({SOC.unit})': '{:.0f}'.format,
+            f'Rate ({NET_HOUSEHOLD.unit})': '{:.1f}'.format,
             f'Savings ({EUR})': '{:,.2f}'.format,
             f'Net Bill ({EUR})': '{:,.2f}'.format,
             'Savings %': '{:.1f}%'.format,

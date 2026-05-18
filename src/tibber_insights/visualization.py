@@ -2,14 +2,14 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from .constants import (
-    net_household, charge, discharge,
-    soc, net_buy_price, net_sell_price, cost_wo_battery, cost_with_battery,
-    EUR, KW, KWH, time, cumulative_savings, savings, savings_per_day
+    NET_HOUSEHOLD, CHARGE, DISCHARGE,
+    SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BATTERY, COST_WITH_BATTERY,
+    EUR, KW, KWH, TIME, CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY
 )
 
 def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
     """
-    Plots battery behavior (SOC, Charge/Discharge) alongside net consumption and prices.
+    Plots battery behavior (SOC, Charge/Discharge) alongside net CONSUMPTION and prices.
     Zooms in on the last `days` days by default.
     """
 
@@ -30,7 +30,7 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
     def add_trace_to_fig(subplot_row, quantity, y_values=sim_df, trace_type=go.Scatter, **kwargs):
         fig.add_trace(
             trace_type(
-                x=sim_df[time],
+                x=sim_df[TIME],
                 y=y_values[quantity],
                 name=quantity,
                 legend=f'legend{subplot_row}',
@@ -42,25 +42,25 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
         fig.update_yaxes(title_text=quantity.unit, fixedrange=True, row=subplot_row, col=1)
 
     # Subplot 1: SOC
-    add_trace_to_fig(1, soc, line=dict(color='royalblue'), fill='tozeroy', showlegend=False)
+    add_trace_to_fig(1, SOC, line=dict(color='royalblue'), fill='tozeroy', showlegend=False)
     fig.add_hline(y=capacity, line_width=2, line_dash="solid", line_color="blue", row=1, col=1)
 
     # Subplot 2: Power Flows
-    add_trace_to_fig(2, net_household, line=dict(color='grey', dash='dash'))
-    add_trace_to_fig(2, charge, trace_type=go.Bar, marker_color='forestgreen')
-    add_trace_to_fig(2, discharge, trace_type=go.Bar, marker_color='firebrick',
-                     y_values=-sim_df[[discharge]])  # minus 1 to plot discharge negatively
+    add_trace_to_fig(2, NET_HOUSEHOLD, line=dict(color='grey', dash='dash'))
+    add_trace_to_fig(2, CHARGE, trace_type=go.Bar, marker_color='forestgreen')
+    add_trace_to_fig(2, DISCHARGE, trace_type=go.Bar, marker_color='firebrick',
+                     y_values=-sim_df[[DISCHARGE]])  # minus 1 to plot DISCHARGE negatively
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
 
     # Subplot 3: Prices
-    add_trace_to_fig(3, net_buy_price, line=dict(color='orange'))
-    add_trace_to_fig(3, net_sell_price, line=dict(color='blue'))
+    add_trace_to_fig(3, NET_BUY_PRICE, line=dict(color='orange'))
+    add_trace_to_fig(3, NET_SELL_PRICE, line=dict(color='blue'))
 
     # Subplot 4: Cost Comparison (Line)
-    add_trace_to_fig(4, cost_wo_battery, line=dict(color='gray', dash='dash'))
-    add_trace_to_fig(4, cost_with_battery, line=dict(color='indigo'))
+    add_trace_to_fig(4, COST_WO_BATTERY, line=dict(color='gray', dash='dash'))
+    add_trace_to_fig(4, COST_WITH_BATTERY, line=dict(color='indigo'))
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=4, col=1)
-    add_trace_to_fig(4, savings_per_day, trace_type=go.Bar)
+    add_trace_to_fig(4, SAVINGS_PER_DAY, trace_type=go.Bar)
 
 
     fig.update_layout(
@@ -78,7 +78,7 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
 
     # Set initial zoom to the last n days, but allow panning
     if days:
-        end_date = sim_df[time].max()
+        end_date = sim_df[TIME].max()
         start_date = end_date - pd.Timedelta(days=days)
         fig.update_xaxes(range=[start_date, end_date])
 

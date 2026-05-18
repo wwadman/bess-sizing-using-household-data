@@ -1,8 +1,8 @@
 import glob
 import pandas as pd
-from .constants import net_household, ENERGIEBELASTING, INKOOPVERGOEDING, VAT_RATE, net_buy_price, net_sell_price, time, \
-    consumption, production, unit_price, consumption_unit_price_eur, production_unit_price_eur, expected_consumption, \
-    expected_production, consumption_cost_eur, production_profit_eur
+from .constants import NET_HOUSEHOLD, ENERGIEBELASTING, INKOOPVERGOEDING, VAT_RATE, NET_BUY_PRICE, NET_SELL_PRICE, TIME, \
+    CONSUMPTION, PRODUCTION, UNIT_PRICE, CONSUMPTION_UNIT_PRICE_EUR, PRODUCTION_UNIT_PRICE_EUR, EXPECTED_CONSUMPTION, \
+    EXPECTED_PRODUCTION, CONSUMPTION_COST_EUR, PRODUCTION_PROFIT_EUR
 
 
 def load_monthly_files(pattern="csv/data-*.csv"):
@@ -19,42 +19,42 @@ def load_monthly_files(pattern="csv/data-*.csv"):
     df = pd.concat(dfs, ignore_index=True)
 
     df.rename(columns={
-        "hour_starts_at": time,
-        "consumption_kwh": consumption,
-        "production_kwh": production,
-        "consumption_unit_price_eur": consumption_unit_price_eur,
-        "production_unit_price_eur": production_unit_price_eur,
-        "consumption_cost_eur": consumption_cost_eur,
-        "production_profit_eur": production_profit_eur
+        "hour_starts_at": TIME,
+        "consumption_kwh": CONSUMPTION,
+        "production_kwh": PRODUCTION,
+        "consumption_unit_price_eur": CONSUMPTION_UNIT_PRICE_EUR,
+        "production_unit_price_eur": PRODUCTION_UNIT_PRICE_EUR,
+        "consumption_cost_eur": CONSUMPTION_COST_EUR,
+        "production_profit_eur": PRODUCTION_PROFIT_EUR
         }, inplace=True)
 
-    df[time] = pd.to_datetime(df[time], utc=True).dt.tz_convert("Europe/Amsterdam")
-    df = df.sort_values(time).reset_index(drop=True)
-    df = df[df[time] < '2026-04-23']  # Just to remove last, incomplete day
+    df[TIME] = pd.to_datetime(df[TIME], utc=True).dt.tz_convert("Europe/Amsterdam")
+    df = df.sort_values(TIME).reset_index(drop=True)
+    df = df[df[TIME] < '2026-04-23']  # Just to remove last, incomplete day
     assert not df.isna().any().any(), 'Data is not complete!'
 
     check_hour_coverage(df)
 
-    df[net_household] = df[consumption] - df[production]
-    df = df.drop_duplicates(subset=[time]).sort_values(time)
+    df[NET_HOUSEHOLD] = df[CONSUMPTION] - df[PRODUCTION]
+    df = df.drop_duplicates(subset=[TIME]).sort_values(TIME)
 
     df = clean_unit_prices(df)
 
     df = add_expected_consumption_production(df)
 
     # Focus all analysis on the very last 365 * 24 hours
-    recent_hours = sorted(df[time].unique())[-365 * 24:]
-    df = df[df[time].isin(recent_hours)].copy()
+    recent_hours = sorted(df[TIME].unique())[-365 * 24:]
+    df = df[df[TIME].isin(recent_hours)].copy()
 
     return df
 
 
 def check_hour_coverage(df):
     # -- consumption/production breakdown -------------------------------------
-    some_consumption = df[consumption] > 0
-    no_consumption   = df[consumption] == 0
-    some_production  = df[production] > 0
-    no_production    = df[production] == 0
+    some_consumption = df[CONSUMPTION] > 0
+    no_consumption   = df[CONSUMPTION] == 0
+    some_production  = df[PRODUCTION] > 0
+    no_production    = df[PRODUCTION] == 0
 
     all_covered = (
           len(df[some_consumption & some_production])
@@ -74,15 +74,15 @@ def clean_unit_prices(df):
         pd.Series: Net price series.
 
     Note:
-    Until start of 2026 Tibber df[consumption_unit_price_eur] == df[production_unit_price_eur]
-    From start of 2026 Tibber df[consumption_unit_price_eur] == df[production_unit_price_eur] + INKOOPVERGOEDING
+    Until start of 2026 Tibber df[CONSUMPTION_UNIT_PRICE_EUR] == df[PRODUCTION_UNIT_PRICE_EUR]
+    From start of 2026 Tibber df[CONSUMPTION_UNIT_PRICE_EUR] == df[PRODUCTION_UNIT_PRICE_EUR] + INKOOPVERGOEDING
     This is super confusing, since we want to mimic 2027 onwards, which has IV for consumption only,
-    so we will use only the production_unit_price_eur and add the IV (and EB and BTW) to get the consumption_unit_price_eur_net
+    so we will use only the PRODUCTION_UNIT_PRICE_EUR and add the IV (and EB and BTW) to get the consumption_unit_price_eur_net
     """
-    df[unit_price] = df[production_unit_price_eur]
-    df[net_buy_price] = calculate_net_price(df[unit_price], 'buy')
-    df[net_sell_price] = calculate_net_price(df[unit_price], 'sell')
-    df.drop(columns=[consumption_unit_price_eur, production_unit_price_eur, unit_price], inplace=True)
+    df[UNIT_PRICE] = df[PRODUCTION_UNIT_PRICE_EUR]
+    df[NET_BUY_PRICE] = calculate_net_price(df[UNIT_PRICE], 'buy')
+    df[NET_SELL_PRICE] = calculate_net_price(df[UNIT_PRICE], 'sell')
+    df.drop(columns=[CONSUMPTION_UNIT_PRICE_EUR, PRODUCTION_UNIT_PRICE_EUR, UNIT_PRICE], inplace=True)
 
     return df
 
@@ -100,7 +100,7 @@ def add_expected_consumption_production(df):
     """
     n_weeks_to_look_back = 4
     look_back_hours_for_rolling_mean = [24 * 7 * (i + 1) for i in range(n_weeks_to_look_back)]
-    for col, exp_col in [(consumption, expected_consumption), (production, expected_production)]:
+    for col, exp_col in [(CONSUMPTION, EXPECTED_CONSUMPTION), (PRODUCTION, EXPECTED_PRODUCTION)]:
         df[exp_col] = df[col].shift(look_back_hours_for_rolling_mean).mean(axis=1)
 
     return df

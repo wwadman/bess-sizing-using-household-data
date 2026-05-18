@@ -1,14 +1,14 @@
-from .constants import ENERGIEBELASTING, INKOOPVERGOEDING, VAT_RATE, EUR, KWH, net_buy_price, net_sell_price, \
-    consumption, production
+from .constants import ENERGIEBELASTING, INKOOPVERGOEDING, VAT_RATE, EUR, KWH, NET_BUY_PRICE, NET_SELL_PRICE, \
+    CONSUMPTION, PRODUCTION
 
 
 def forecast_2027_bill(df):
     """Calculate the 2027 bill using the last 365-day profile."""
-    annual_consumed = df[consumption].sum()
-    annual_exported = df[production].sum()
+    annual_consumed = df[CONSUMPTION].sum()
+    annual_exported = df[PRODUCTION].sum()
 
-    cons_net = (df[net_buy_price] * df[consumption]).sum()
-    export_net = (df[net_sell_price] * df[production]).sum()
+    cons_net = (df[NET_BUY_PRICE] * df[CONSUMPTION]).sum()
+    export_net = (df[NET_SELL_PRICE] * df[PRODUCTION]).sum()
 
     net_bill = cons_net - export_net
 

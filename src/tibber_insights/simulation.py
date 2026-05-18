@@ -1,20 +1,25 @@
 import numpy as np
 import pandas as pd
 from .constants import (
-    EFFICIENCY, net_household, charge, discharge,
-    soc, cost_wo_battery, cost_with_battery, net_buy_price, net_sell_price, time,
-    cumulative_savings, savings, savings_per_day
+    EFFICIENCY, NET_HOUSEHOLD, CHARGE, DISCHARGE,
+    SOC, COST_WO_BATTERY, COST_WITH_BATTERY, NET_BUY_PRICE, NET_SELL_PRICE, TIME,
+    CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY
 )
 
 def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
     sim_df = sim_df.copy()  # To avoid adding columns to the original DataFrame, for every strategy, rate and capacity
 
-    current_soc = capacity_kwh/2  # Just to enable sanity-checking/debugging during the first time steps of the simulation
+    current_soc = capacity_kwh/2  # Just to enable sanity-checking/debugging during the first TIME steps of the simulation
     total_savings = 0.0
     
     simulation_logs = []
 
     for i in range(len(sim_df)):
+        # Add a waitbar that fills up every n steps. It replaces previous print everytime:
+        n = 100
+        if i % n == 0:
+            print(f"\rSimulation progress: {i}/{len(sim_df)}", end='', flush=True)
+
         now, future_df = get_now_and_known_future(i, sim_df)
 
         charge_kwh, discharge_kwh = strategy_fn(
@@ -32,30 +37,30 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
         current_soc -= discharge_kwh / EFFICIENCY
 
         # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
-        price_this_hour = now[net_buy_price] if now[net_household] > 0 else now[net_sell_price]
-        cost_no_batt = now[net_household] * price_this_hour
+        price_this_hour = now[NET_BUY_PRICE] if now[NET_HOUSEHOLD] > 0 else now[NET_SELL_PRICE]
+        cost_no_batt = now[NET_HOUSEHOLD] * price_this_hour
 
         # Cost with battery: (net_kwh + charge - discharge) * relevant_price
-        new_net_kwh = now[net_household] + charge_kwh - discharge_kwh
-        price_this_hour = now[net_buy_price] if new_net_kwh > 0 else now[net_sell_price]
+        new_net_kwh = now[NET_HOUSEHOLD] + charge_kwh - discharge_kwh
+        price_this_hour = now[NET_BUY_PRICE] if new_net_kwh > 0 else now[NET_SELL_PRICE]
         cost_with_batt = new_net_kwh * price_this_hour
 
         total_savings += cost_no_batt - cost_with_batt
 
         simulation_logs.append({
-            time: now[time],
-            soc: current_soc,
-            charge: charge_kwh,
-            discharge: discharge_kwh,
-            cost_wo_battery: cost_no_batt,
-            cost_with_battery: cost_with_batt
+            TIME: now[TIME],
+            SOC: current_soc,
+            CHARGE: charge_kwh,
+            DISCHARGE: discharge_kwh,
+            COST_WO_BATTERY: cost_no_batt,
+            COST_WITH_BATTERY: cost_with_batt
         })
 
     df_logs = pd.DataFrame(simulation_logs)
-    df_logs[savings] = df_logs[cost_wo_battery] - df_logs[cost_with_battery]
-    df_logs[savings_per_day] = df_logs.groupby(df_logs[time].dt.date)[savings].transform('sum')
-    df_logs[cumulative_savings] = np.cumsum(df_logs[savings])
-    sim_df = sim_df.merge(df_logs, on=time, how="left", suffixes=("", "_logged"))
+    df_logs[SAVINGS] = df_logs[COST_WO_BATTERY] - df_logs[COST_WITH_BATTERY]
+    df_logs[SAVINGS_PER_DAY] = df_logs.groupby(df_logs[TIME].dt.date)[SAVINGS].transform('sum')
+    df_logs[CUMULATIVE_SAVINGS] = np.cumsum(df_logs[SAVINGS])
+    sim_df = sim_df.merge(df_logs, on=TIME, how="left", suffixes=("", "_logged"))
     return total_savings, sim_df
 
 
@@ -63,7 +68,7 @@ def get_now_and_known_future(i, sim_df):
     now = sim_df.iloc[i]  # now denotes current hour in the simulation
 
     # Dynamic horizon: rest of today + (if past 1pm) tomorrow
-    current_hour = now[time].hour
+    current_hour = now[TIME].hour
     hours_until_midnight = 24 - current_hour
     horizon = hours_until_midnight
     if current_hour >= 13:

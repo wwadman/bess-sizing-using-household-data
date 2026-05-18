@@ -25,7 +25,8 @@ Analyze and simulate energy costs with Tibber and home batteries.
    ```bash
    python main.py
    ```
-
+## Notes
+- 'net' means 'after potential taxes and fees' (not 'grid')
 
 ## Open issues
 - Sanity check optimal_mpc
