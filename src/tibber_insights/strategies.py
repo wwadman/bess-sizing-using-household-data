@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pulp
 from .constants import (NET_BUY_PRICE, NET_SELL_PRICE, PRODUCTION, CONSUMPTION_UNIT_PRICE_EUR, EXPECTED_CONSUMPTION,
                         EXPECTED_PRODUCTION, TIME, NET_VALUE, EXPECTED_MAX_CONSUMPTION)
 
@@ -166,26 +167,30 @@ def strategy_optimal_mpc2(row, future_df, current_soc, capacity_kwh, max_rate_kw
 
     current_soc_after_discharge = current_soc
     current_time = future_df[TIME].iloc[0]
-    for i, slot in net_discharge_values.iterrows():
+    net_discharge_values['Discharge plan'] = 0.0
+    for idx, slot in net_discharge_values.iterrows():
         # Discharge is limited by remaining SOC and available bandwidth for that hour
-        h = i[1]
+        h = idx[1]
         h_bw_info = net_discharge_values.loc[(slice(None), h), 'discharge_bandwidth_avail']
         avail_bw = h_bw_info.iloc[0] if not h_bw_info.empty else 0.0
 
         can_discharge = min(slot[EXPECTED_MAX_CONSUMPTION], current_soc_after_discharge * round_trip_efficiency, avail_bw)
         
-        net_discharge_values.at[i, 'Discharge plan'] = can_discharge
+        net_discharge_values.at[idx, 'Discharge plan'] = can_discharge
         
-        # Update both charge and discharge bandwidth for this hour across all slots
+        # Update bandwidth: discharging reduces available bandwidth for both charging and discharging
         h_mask = net_discharge_values.index.get_level_values(TIME) == h
         net_discharge_values.loc[h_mask, 'discharge_bandwidth_avail'] -= can_discharge
         net_discharge_values.loc[h_mask, 'charge_bandwidth_avail'] -= can_discharge
         
         current_soc_after_discharge -= can_discharge / round_trip_efficiency
 
-    # Arbitrage logic
+    # Arbitrage logic: collecting potential charge events
+    # Charge from household production (solar) has cost = NET_SELL_PRICE (opportunity cost)
     charge_household = (future_df[[TIME, NET_SELL_PRICE, EXPECTED_PRODUCTION]]
                         .rename(columns={NET_SELL_PRICE: 'Cost', EXPECTED_PRODUCTION: 'Available amount'}))
+    
+    # Charge from grid has cost = NET_BUY_PRICE
     charge_grid = (future_df[[TIME, NET_BUY_PRICE]]
                    .rename(columns={NET_BUY_PRICE: 'Cost'}))
     charge_household.insert(0, 'Charge from', 'Household')
@@ -212,12 +217,29 @@ def strategy_optimal_mpc2(row, future_df, current_soc, capacity_kwh, max_rate_kw
             if round_trip_efficiency * d_slot[NET_VALUE] <= c_slot['Cost']:
                 break
 
-            # Re-calculate transfer_amount based on CURRENT bandwidth
+            # Re-calculate transfer_amount based on CURRENT bandwidth for BOTH hours
+            # This is key: if h_ch or h_dis already used bandwidth for something else
+            # (including each other!), they must share the remaining pool.
+            # We also ensure that we don't charge in an hour that is already discharging
+            # (and vice versa) to avoid simultaneous actions.
             h_ch_bw_info = net_discharge_values.loc[(slice(None), h_ch), 'charge_bandwidth_avail']
             ch_bw = h_ch_bw_info.iloc[0] if not h_ch_bw_info.empty else 0.0
             
             h_dis_bw_info = net_discharge_values.loc[(slice(None), h_dis), 'discharge_bandwidth_avail']
             dis_bw = h_dis_bw_info.iloc[0] if not h_dis_bw_info.empty else 0.0
+
+            # Special check to avoid simultaneous charge/discharge:
+            # If h_ch already has a DISCHARGE plan, its available charging bandwidth 
+            # is 0 for this simple MPC (to avoid netting).
+            h_ch_total_dis = (net_discharge_values.xs(h_ch, level=TIME)['Discharge plan'].sum() +
+                              net_discharge_values.xs(h_ch, level=TIME)['Arbitrage discharge plan'].sum())
+            if h_ch_total_dis > 0:
+                ch_bw = 0.0
+
+            # Similarly for h_dis: if it already has a CHARGE plan
+            h_dis_total_ch = charge_slots.xs(h_dis, level=TIME)['Charge plan'].sum()
+            if h_dis_total_ch > 0:
+                dis_bw = 0.0
 
             transfer_amount = min(
                 c_slot['Available amount'],
@@ -235,8 +257,10 @@ def strategy_optimal_mpc2(row, future_df, current_soc, capacity_kwh, max_rate_kw
             charge_slots.at[c_idx, 'Available amount'] -= transfer_amount
 
             # Update bandwidth for both hours across all slots
-            # Important: at h_ch we CHARGE (increases SOC), at h_dis we DISCHARGE (decreases SOC)
-            # Bandwidth is shared between charging and discharging.
+            # If we charge at h_ch, it uses bandwidth at h_ch.
+            # If we discharge at h_dis, it uses bandwidth at h_dis.
+            # Simultaneous charging and discharging in the same hour is now impossible
+            # because they share the same bandwidth pool.
             h_ch_mask = net_discharge_values.index.get_level_values(TIME) == h_ch
             net_discharge_values.loc[h_ch_mask, 'charge_bandwidth_avail'] -= transfer_amount
             net_discharge_values.loc[h_ch_mask, 'discharge_bandwidth_avail'] -= transfer_amount
@@ -255,26 +279,6 @@ def strategy_optimal_mpc2(row, future_df, current_soc, capacity_kwh, max_rate_kw
     charge_now = charge_slots.xs(current_time, level=TIME)['Charge plan'].sum()
     discharge_now = (net_discharge_values.xs(current_time, level=TIME)['Discharge plan'].sum() +
                      net_discharge_values.xs(current_time, level=TIME)['Arbitrage discharge plan'].sum())
-
-    # Netting logic: If we both charge and discharge in the same hour, net them out.
-    # This ensures we don't have simultaneous charge and discharge in the final plan.
-    if charge_now > 0 and discharge_now > 0:
-        # Convert both to energy reaching/leaving the BATTERY
-        # charge_now is kWh from grid/solar to battery (pre-efficiency)
-        # discharge_now is kWh from battery to grid/household (post-efficiency)
-        
-        # Internal battery movement:
-        batt_charge = charge_now * round_trip_efficiency
-        batt_discharge = discharge_now / round_trip_efficiency
-        
-        if batt_charge > batt_discharge:
-            batt_net = batt_charge - batt_discharge
-            charge_now = batt_net / round_trip_efficiency
-            discharge_now = 0.0
-        else:
-            batt_net = batt_discharge - batt_charge
-            discharge_now = batt_net * round_trip_efficiency
-            charge_now = 0.0
 
     return float(charge_now), float(discharge_now)
 
@@ -330,3 +334,84 @@ def _get_net_discharge_values(future_df):
                             )
 
     return net_discharge_values
+
+
+def strategy_linear_programming(row, future_df, current_soc, capacity_kwh, max_rate_kw,
+                                 round_trip_efficiency=0.90):
+    """
+    Optimizes battery behavior using Linear Programming (LP).
+    
+    The problem is modeled as a maximization of net benefit over a future horizon.
+    We split energy flows into four variables to handle different values of energy:
+    - ch_h: Charge from House (solar) -> Opportunity cost: p_sell
+    - ch_g: Charge from Grid -> Cost: p_buy
+    - dis_h: Discharge to House -> Value: p_buy (avoided cost)
+    - dis_g: Discharge to Grid -> Value: p_sell (revenue)
+    """
+    T = len(future_df)
+    
+    # 1. Initialize the LP Problem
+    # We use a maximization objective to maximize 'savings' or 'net benefit'
+    prob = pulp.LpProblem("Battery_Optimization", pulp.LpMaximize)
+    
+    # 2. Parameters (Inputs)
+    p_buy = future_df[NET_BUY_PRICE].values
+    p_sell = future_df[NET_SELL_PRICE].values
+    e_cons = future_df[EXPECTED_CONSUMPTION].values
+    e_prod = future_df[EXPECTED_PRODUCTION].values
+    rte = round_trip_efficiency
+    
+    # 3. Decision Variables
+    # All are continuous and non-negative
+    ch_h = [pulp.LpVariable(f"ch_h_{t}", lowBound=0) for t in range(T)]
+    ch_g = [pulp.LpVariable(f"ch_g_{t}", lowBound=0) for t in range(T)]
+    dis_h = [pulp.LpVariable(f"dis_h_{t}", lowBound=0) for t in range(T)]
+    dis_g = [pulp.LpVariable(f"dis_g_{t}", lowBound=0) for t in range(T)]
+    # Binary variables to prevent simultaneous charging and discharging
+    is_charging = [pulp.LpVariable(f"is_charging_{t}", cat=pulp.LpBinary) for t in range(T)]
+    
+    soc = [pulp.LpVariable(f"soc_{t}", lowBound=0, upBound=capacity_kwh) for t in range(T)]
+    
+    # 4. Objective Function
+    # Maximize: sum(dis_h*p_buy + dis_g*p_sell - ch_h*p_sell - ch_g*p_buy)
+    benefit_terms = [
+        dis_h[t] * p_buy[t] + dis_g[t] * p_sell[t] - ch_h[t] * p_sell[t] - ch_g[t] * p_buy[t]
+        for t in range(T)
+    ]
+    prob += pulp.lpSum(benefit_terms)
+    
+    # 5. Constraints
+    for t in range(T):
+        # State of Charge Dynamics
+        prev_soc = current_soc if t == 0 else soc[t-1]
+        # soc_t = soc_{t-1} + η*(ch_h + ch_g) - (1/η)*(dis_h + dis_g)
+        prob += soc[t] == prev_soc + rte * (ch_h[t] + ch_g[t]) - (1 / rte) * (dis_h[t] + dis_g[t])
+        
+        # Power Bandwidth (Rate) Constraints with Binary switch
+        # ch_h + ch_g <= max_rate_kw * is_charging
+        # dis_h + dis_g <= max_rate_kw * (1 - is_charging)
+        prob += ch_h[t] + ch_g[t] <= max_rate_kw * is_charging[t]
+        prob += dis_h[t] + dis_g[t] <= max_rate_kw * (1 - is_charging[t])
+        
+        # Household Flow Boundaries
+        prob += ch_h[t] <= e_prod[t]
+        prob += dis_h[t] <= e_cons[t]
+        
+    # 6. Solve the problem
+    # PULP_CBC_CMD is the default solver. We suppress output for speed.
+    prob.solve(pulp.PULP_CBC_CMD(msg=0))
+    
+    # 7. Extract the planned action for the current hour (t=0)
+    # If the solver failed to find a solution (shouldn't happen here), return 0,0
+    if pulp.LpStatus[prob.status] != 'Optimal':
+        return 0.0, 0.0
+        
+    charge_now = pulp.value(ch_h[0]) + pulp.value(ch_g[0])
+    discharge_now = pulp.value(dis_h[0]) + pulp.value(dis_g[0])
+
+    # future_df['Charge House'] = [pulp.value(i) for i in ch_h]
+    # future_df['Discharge House'] = [pulp.value(i) for i in dis_h]
+    # future_df['Charge Grid'] = [pulp.value(i) for i in ch_g]
+    # future_df['Discharge Grid'] = [pulp.value(i) for i in dis_g]
+    
+    return float(charge_now), float(discharge_now)
