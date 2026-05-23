@@ -29,7 +29,7 @@ Analyze and simulate energy costs with Tibber and home batteries.
 - 'net' means 'after potential taxes and fees' (not 'grid')
 
 ## Open issues
-- Sanity check optimal_mpc
+- Also plot Net Household incl Battery to check if optimal strategy indeed fully exploits "own usage".
 
 ## Nice-to-haves 
 - 
