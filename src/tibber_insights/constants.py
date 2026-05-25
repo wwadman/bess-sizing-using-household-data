@@ -1,3 +1,10 @@
+ENERGIEBELASTING = 0.09161  # €/kWh only when consuming
+INKOOPVERGOEDING = 0.0242  # €/kWh only when consuming
+VAT_RATE = 0.21  # 21% BTW
+
+# Round-trip efficiency EFFICIENCY_CHARGING * EFFICIENCY_DISCHARGING of about 0.81 is pretty conservative:
+EFFICIENCY_CHARGING = EFFICIENCY_DISCHARGING = 0.9
+
 # Units
 EUR = "€"
 KW = "kW"
@@ -13,15 +20,6 @@ class Quantity(str):
 
     def __reduce__(self):
         return (self.__class__, (str(self), self.unit))
-
-
-# 2027 Netherlands rates
-ENERGIEBELASTING = 0.09161  # €/kWh only when consuming
-INKOOPVERGOEDING = 0.0242  # €/kWh only when consuming
-VAT_RATE = 0.21  # 21% BTW
-
-# Round-trip efficiency is EFFICIENCY_CHARGING * EFFICIENCY_DISCHARGING:
-EFFICIENCY_CHARGING = EFFICIENCY_DISCHARGING = 0.9
 
 # Column names of original dataframe
 TIME = "Timestamp"  # Does not have a unit, so it is not a Quantity
