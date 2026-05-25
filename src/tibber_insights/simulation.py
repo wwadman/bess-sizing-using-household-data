@@ -7,7 +7,7 @@ from .constants import (
     CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY, NET_HOUSEHOLD_WITH_BATTERY
 )
 
-def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
+def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
     sim_df = sim_df.copy()  # To avoid adding columns to the original DataFrame, for every strategy, rate and capacity
 
     current_soc = capacity_kwh/2  # Just to enable sanity-checking/debugging during the first TIME steps of the simulation
@@ -28,12 +28,14 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
             future_df=future_df,
             current_soc=current_soc,
             capacity_kwh=capacity_kwh,
-            max_rate_kw=rate_kw,
+            max_rate_kw=max_rate_kw,
         )
 
         # Enforce physical limits and battery constraints
         # 1. Total (dis)charge cannot exceed max rate or battery limits
-        charge_kwh = max(0, min(ch_h + ch_g, rate_kw, capacity_kwh - current_soc))
+        # Max charge is limited by remaining capacity, adjusted for efficiency losses
+        max_charge_allowed = (capacity_kwh - current_soc) / EFFICIENCY
+        charge_kwh = max(0, min(ch_h + ch_g, max_rate_kw, max_charge_allowed))
         
         # Split back to house/grid proportionally if we had to cap it
         total_requested_charge = ch_h + ch_g
@@ -46,7 +48,9 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
 
         current_soc += charge_kwh * EFFICIENCY
 
-        discharge_kwh = max(0, min(dis_h + dis_g, rate_kw, current_soc * EFFICIENCY))
+        # Max discharge is limited by current SOC, adjusted for efficiency losses
+        max_discharge_allowed = current_soc * EFFICIENCY
+        discharge_kwh = max(0, min(dis_h + dis_g, max_rate_kw, max_discharge_allowed))
         
         total_requested_discharge = dis_h + dis_g
         if total_requested_discharge > 1e-6:

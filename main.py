@@ -48,7 +48,7 @@ def main():
             savings, sim_df = run_battery_simulation(
                 sim_df=df,
                 capacity_kwh=capacity,
-                rate_kw=rate,
+                max_rate_kw=rate,
                 strategy_fn=strategy_fn,
             )
 

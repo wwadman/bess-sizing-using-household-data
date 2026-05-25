@@ -378,7 +378,10 @@ def strategy_linear_programming(row, future_df, current_soc, capacity_kwh, max_r
     # 4. Objective Function
     # Maximize: sum(dis_h*p_buy + dis_g*p_sell - ch_h*p_sell - ch_g*p_buy)
     benefit_terms = [
-        dis_h[t] * p_buy[t] + dis_g[t] * p_sell[t] - ch_h[t] * p_sell[t] - ch_g[t] * p_buy[t]
+        dis_h[t] * p_buy[t]
+        + dis_g[t] * p_sell[t]
+        - ch_h[t] * p_sell[t]
+        - ch_g[t] * p_buy[t]
         for t in range(T)
     ]
     prob += pulp.lpSum(benefit_terms)
@@ -399,6 +402,11 @@ def strategy_linear_programming(row, future_df, current_soc, capacity_kwh, max_r
         # Household Flow Boundaries
         prob += ch_h[t] <= e_prod[t]
         prob += dis_h[t] <= e_cons[t]
+
+        # State-dependent constraints (as requested by user)
+        # These ensure the plan respects current/predicted SOC limits at each step
+        prob += ch_h[t] + ch_g[t] <= (capacity_kwh - prev_soc) / rte
+        prob += dis_h[t] + dis_g[t] <= prev_soc * rte
         
     # 6. Solve the problem
     # PULP_CBC_CMD is the default solver. We suppress output for speed.
