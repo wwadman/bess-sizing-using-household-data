@@ -30,9 +30,8 @@ Analyze and simulate energy costs with Tibber and home batteries.
 
 ## Open issues
 - Also plot Net Household incl Battery to check if optimal strategy indeed fully exploits "own usage".
-- Also in the (dis)charge rate constraints we should first account for round trip efficiency.
+- Also in the (dis)charge rate constraints we should first account for round trip efficiency, right??
 
-## Nice-to-haves 
-- Remove all strategies except linear programming
+## Nice-to-haves
 - Add a stupidly simple use-your-own-energy strategy
 - Remove constraint that we cannot charge when discharging and vice versa
