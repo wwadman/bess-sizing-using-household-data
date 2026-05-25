@@ -17,7 +17,7 @@ def strategy_arbitrage(row, future_df, current_soc, capacity_kwh, max_rate_kw):
     if current_soc > 0 and row[NET_BUY_PRICE] >= future_df[NET_BUY_PRICE].quantile(0.75):
         discharge_kwh = max_rate_kw
 
-    return charge_kwh, discharge_kwh
+    return charge_kwh, 0.0, 0.0, discharge_kwh
 
 
 def strategy_optimal_mpc(row, future_df, current_soc, capacity_kwh, max_rate_kw,
@@ -151,8 +151,9 @@ def strategy_optimal_mpc(row, future_df, current_soc, capacity_kwh, max_rate_kw,
         if available_storage_space <= 0.0001:
             break
 
-    # Return the planned action for the current hour (index 0)
-    return float(charge_plan[0]), float(discharge_plan[0])
+    # Return the planned actions: (charge_from_house, charge_from_grid, discharge_to_house, discharge_to_grid)
+    # Since this strategy does not distinguish, we'll return totals as from/to grid
+    return 0.0, float(charge_plan[0]), 0.0, float(discharge_plan[0])
 
 
 def strategy_optimal_mpc2(row, future_df, current_soc, capacity_kwh, max_rate_kw,
@@ -280,7 +281,9 @@ def strategy_optimal_mpc2(row, future_df, current_soc, capacity_kwh, max_rate_kw
     discharge_now = (net_discharge_values.xs(current_time, level=TIME)['Discharge plan'].sum() +
                      net_discharge_values.xs(current_time, level=TIME)['Arbitrage discharge plan'].sum())
 
-    return float(charge_now), float(discharge_now)
+    # Return the planned actions: (charge_from_house, charge_from_grid, discharge_to_house, discharge_to_grid)
+    # Since this strategy does not distinguish, we'll return totals as from/to grid
+    return 0.0, float(charge_now), 0.0, float(discharge_now)
 
 
 def strategy_greedy(row, future_df, current_soc, capacity_kwh, max_rate_kw):
@@ -300,7 +303,7 @@ def strategy_greedy(row, future_df, current_soc, capacity_kwh, max_rate_kw):
         charge_kwh = 0
         discharge_kwh = 0
 
-    return charge_kwh, discharge_kwh
+    return 0.0, float(charge_kwh), 0.0, float(discharge_kwh)
 
 
 def strategy_solar_plus_low_price(row, future_df, current_soc, capacity_kwh, max_rate_kw):
@@ -312,7 +315,7 @@ def strategy_solar_plus_low_price(row, future_df, current_soc, capacity_kwh, max
     future_price = future_df[CONSUMPTION_UNIT_PRICE_EUR].max()
     discharge_kwh = current_soc if future_price > 0.25 else 0
 
-    return charge_kwh, discharge_kwh
+    return 0.0, float(charge_kwh), 0.0, float(discharge_kwh)
 
 
 def _get_net_discharge_values(future_df):
@@ -401,17 +404,14 @@ def strategy_linear_programming(row, future_df, current_soc, capacity_kwh, max_r
     # PULP_CBC_CMD is the default solver. We suppress output for speed.
     prob.solve(pulp.PULP_CBC_CMD(msg=0))
     
-    # 7. Extract the planned action for the current hour (t=0)
-    # If the solver failed to find a solution (shouldn't happen here), return 0,0
+    # 7. Extract the planned actions for the current hour (t=0)
+    # If the solver failed to find a solution (shouldn't happen here), return all zeros
     if pulp.LpStatus[prob.status] != 'Optimal':
-        return 0.0, 0.0
+        return 0.0, 0.0, 0.0, 0.0
         
-    charge_now = pulp.value(ch_h[0]) + pulp.value(ch_g[0])
-    discharge_now = pulp.value(dis_h[0]) + pulp.value(dis_g[0])
+    ch_h_now = pulp.value(ch_h[0])
+    ch_g_now = pulp.value(ch_g[0])
+    dis_h_now = pulp.value(dis_h[0])
+    dis_g_now = pulp.value(dis_g[0])
 
-    # future_df['Charge House'] = [pulp.value(i) for i in ch_h]
-    # future_df['Discharge House'] = [pulp.value(i) for i in dis_h]
-    # future_df['Charge Grid'] = [pulp.value(i) for i in ch_g]
-    # future_df['Discharge Grid'] = [pulp.value(i) for i in dis_g]
-    
-    return float(charge_now), float(discharge_now)
+    return float(ch_h_now), float(ch_g_now), float(dis_h_now), float(dis_g_now)

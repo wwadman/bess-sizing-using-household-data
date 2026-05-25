@@ -30,6 +30,8 @@ Analyze and simulate energy costs with Tibber and home batteries.
 
 ## Open issues
 - Also plot Net Household incl Battery to check if optimal strategy indeed fully exploits "own usage".
+- Replace weird (if total_requested_(dis)charge > 1e-6) by assertions
 
 ## Nice-to-haves 
-- 
+- Remove all strategies except linear programming
+- Add a stupidly simple use-your-own-energy strategy

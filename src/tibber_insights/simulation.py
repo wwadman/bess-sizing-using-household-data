@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 from .constants import (
-    EFFICIENCY, NET_HOUSEHOLD, CHARGE, DISCHARGE,
+    EFFICIENCY, NET_HOUSEHOLD, CHARGE, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
+    DISCHARGE, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, COST_WO_BATTERY, COST_WITH_BATTERY, NET_BUY_PRICE, NET_SELL_PRICE, TIME,
-    CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY
+    CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY, NET_HOUSEHOLD_WITH_BATTERY
 )
 
 def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
@@ -22,7 +23,7 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
 
         now, future_df = get_now_and_known_future(i, sim_df)
 
-        charge_kwh, discharge_kwh = strategy_fn(
+        ch_h, ch_g, dis_h, dis_g = strategy_fn(
             row=now,
             future_df=future_df,
             current_soc=current_soc,
@@ -30,10 +31,31 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
             max_rate_kw=rate_kw,
         )
 
-        charge_kwh = max(0, min(charge_kwh, rate_kw, capacity_kwh - current_soc))
+        # Enforce physical limits and battery constraints
+        # 1. Total (dis)charge cannot exceed max rate or battery limits
+        charge_kwh = max(0, min(ch_h + ch_g, rate_kw, capacity_kwh - current_soc))
+        
+        # Split back to house/grid proportionally if we had to cap it
+        total_requested_charge = ch_h + ch_g
+        if total_requested_charge > 1e-6:
+            ratio = charge_kwh / total_requested_charge
+            ch_h *= ratio
+            ch_g *= ratio
+        else:
+            ch_h, ch_g = 0.0, 0.0
+
         current_soc += charge_kwh * EFFICIENCY
 
-        discharge_kwh = max(0, min(discharge_kwh, rate_kw, current_soc * EFFICIENCY))
+        discharge_kwh = max(0, min(dis_h + dis_g, rate_kw, current_soc * EFFICIENCY))
+        
+        total_requested_discharge = dis_h + dis_g
+        if total_requested_discharge > 1e-6:
+            ratio = discharge_kwh / total_requested_discharge
+            dis_h *= ratio
+            dis_g *= ratio
+        else:
+            dis_h, dis_g = 0.0, 0.0
+
         current_soc -= discharge_kwh / EFFICIENCY
 
         # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
@@ -51,7 +73,12 @@ def run_battery_simulation(sim_df, capacity_kwh, rate_kw, strategy_fn):
             TIME: now[TIME],
             SOC: current_soc,
             CHARGE: charge_kwh,
+            CHARGE_FROM_HOUSE: ch_h,
+            CHARGE_FROM_GRID: ch_g,
             DISCHARGE: discharge_kwh,
+            DISCHARGE_TO_HOUSE: dis_h,
+            DISCHARGE_TO_GRID: dis_g,
+            NET_HOUSEHOLD_WITH_BATTERY: new_net_kwh,
             COST_WO_BATTERY: cost_no_batt,
             COST_WITH_BATTERY: cost_with_batt
         })

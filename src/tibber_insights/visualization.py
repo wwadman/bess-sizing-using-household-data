@@ -2,9 +2,11 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from .constants import (
-    NET_HOUSEHOLD, CHARGE, DISCHARGE,
+    NET_HOUSEHOLD, CHARGE, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
+    DISCHARGE, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BATTERY, COST_WITH_BATTERY,
-    EUR, KW, KWH, TIME, CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY
+    EUR, KW, KWH, TIME, CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY,
+    NET_HOUSEHOLD_WITH_BATTERY
 )
 
 def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
@@ -47,9 +49,20 @@ def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3):
 
     # Subplot 2: Power Flows
     add_trace_to_fig(2, NET_HOUSEHOLD, line=dict(color='grey', dash='dash'))
-    add_trace_to_fig(2, CHARGE, trace_type=go.Bar, marker_color='forestgreen')
-    add_trace_to_fig(2, DISCHARGE, trace_type=go.Bar, marker_color='firebrick',
-                     y_values=-sim_df[[DISCHARGE]])  # minus 1 to plot DISCHARGE negatively
+    add_trace_to_fig(2, NET_HOUSEHOLD_WITH_BATTERY, line=dict(color='black'))
+
+    # Charging split
+    add_trace_to_fig(2, CHARGE_FROM_HOUSE, trace_type=go.Bar, marker_color='forestgreen',
+                     legendgroup='charge')
+    add_trace_to_fig(2, CHARGE_FROM_GRID, trace_type=go.Bar, marker_color='lightgreen',
+                     legendgroup='charge')
+
+    # Discharging split (negative values)
+    add_trace_to_fig(2, DISCHARGE_TO_HOUSE, trace_type=go.Bar, marker_color='firebrick',
+                     y_values=-sim_df[[DISCHARGE_TO_HOUSE]], legendgroup='discharge')
+    add_trace_to_fig(2, DISCHARGE_TO_GRID, trace_type=go.Bar, marker_color='salmon',
+                     y_values=-sim_df[[DISCHARGE_TO_GRID]], legendgroup='discharge')
+
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
 
     # Subplot 3: Prices
