@@ -20,7 +20,7 @@ ENERGIEBELASTING = 0.09161  # €/kWh only when consuming
 INKOOPVERGOEDING = 0.0242  # €/kWh only when consuming
 VAT_RATE = 0.21  # 21% BTW
 
-EFFICIENCY = 0.90  # Round-trip
+EFFICIENCY = 1  # 0.90  # Round-trip
 
 # Column names of original dataframe
 TIME = "Timestamp"  # Does not have a unit, so it is not a Quantity

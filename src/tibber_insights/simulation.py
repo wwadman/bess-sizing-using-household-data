@@ -35,39 +35,34 @@ def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
         # 1. Total (dis)charge cannot exceed max rate or battery limits
         # Max charge is limited by remaining capacity, adjusted for efficiency losses
         max_charge_allowed = (capacity_kwh - current_soc) / EFFICIENCY
-        charge_kwh = max(0, min(ch_h + ch_g, max_rate_kw, max_charge_allowed))
+        # charge_kwh = max(0, min(ch_h + ch_g, max_rate_kw, max_charge_allowed))
+
         
         # Split back to house/grid proportionally if we had to cap it
-        total_requested_charge = ch_h + ch_g
-        if total_requested_charge > 1e-6:
-            ratio = charge_kwh / total_requested_charge
-            ch_h *= ratio
-            ch_g *= ratio
-        else:
-            ch_h, ch_g = 0.0, 0.0
+        charge = ch_h + ch_g
+        assert 0 <= charge, f"Total charge cannot be negative"
+        assert charge <= max_rate_kw, f"Total charge cannot exceed max rate"
+        assert charge <= max_charge_allowed * 1.01, f"Total charge cannot exceed battery capacity"
 
-        current_soc += charge_kwh * EFFICIENCY
+        current_soc += charge * EFFICIENCY
 
         # Max discharge is limited by current SOC, adjusted for efficiency losses
         max_discharge_allowed = current_soc * EFFICIENCY
-        discharge_kwh = max(0, min(dis_h + dis_g, max_rate_kw, max_discharge_allowed))
+        # discharge_kwh = max(0, min(dis_h + dis_g, max_rate_kw, max_discharge_allowed))
         
-        total_requested_discharge = dis_h + dis_g
-        if total_requested_discharge > 1e-6:
-            ratio = discharge_kwh / total_requested_discharge
-            dis_h *= ratio
-            dis_g *= ratio
-        else:
-            dis_h, dis_g = 0.0, 0.0
+        discharge = dis_h + dis_g
+        assert 0 <= discharge, f"Total discharge cannot be negative"
+        assert discharge <= max_rate_kw, f"Total discharge cannot exceed max rate"
+        assert discharge <= max_discharge_allowed * 1.01, f"Total discharge cannot exceed battery capacity"
 
-        current_soc -= discharge_kwh / EFFICIENCY
+        current_soc -= discharge / EFFICIENCY
 
         # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
         price_this_hour = now[NET_BUY_PRICE] if now[NET_HOUSEHOLD] > 0 else now[NET_SELL_PRICE]
         cost_no_batt = now[NET_HOUSEHOLD] * price_this_hour
 
         # Cost with battery: (net_kwh + charge - discharge) * relevant_price
-        new_net_kwh = now[NET_HOUSEHOLD] + charge_kwh - discharge_kwh
+        new_net_kwh = now[NET_HOUSEHOLD] + charge - discharge
         price_this_hour = now[NET_BUY_PRICE] if new_net_kwh > 0 else now[NET_SELL_PRICE]
         cost_with_batt = new_net_kwh * price_this_hour
 
@@ -76,10 +71,10 @@ def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
         simulation_logs.append({
             TIME: now[TIME],
             SOC: current_soc,
-            CHARGE: charge_kwh,
+            CHARGE: charge,
             CHARGE_FROM_HOUSE: ch_h,
             CHARGE_FROM_GRID: ch_g,
-            DISCHARGE: discharge_kwh,
+            DISCHARGE: discharge,
             DISCHARGE_TO_HOUSE: dis_h,
             DISCHARGE_TO_GRID: dis_g,
             NET_HOUSEHOLD_WITH_BATTERY: new_net_kwh,
