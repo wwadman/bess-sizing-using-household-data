@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import pulp
 from .constants import (NET_BUY_PRICE, NET_SELL_PRICE, PRODUCTION, CONSUMPTION_UNIT_PRICE_EUR, EXPECTED_CONSUMPTION,
-                        EXPECTED_PRODUCTION, TIME, NET_VALUE, EXPECTED_MAX_CONSUMPTION, EFFICIENCY)
+                        EXPECTED_PRODUCTION, TIME, NET_VALUE, EXPECTED_MAX_CONSUMPTION,
+                        EFFICIENCY_DISCHARGING, EFFICIENCY_CHARGING)
 
 
 def strategy_arbitrage(row, future_df, current_soc, capacity_kwh, max_rate_kw):
@@ -122,12 +123,11 @@ def strategy_linear_programming(row, future_df, current_soc, capacity_kwh, max_r
     for t in range(T):
         # State of Charge Dynamics
         prev_soc = current_soc if t == 0 else soc[t-1]
-        # soc_t = soc_{t-1} + η*(ch_h + ch_g) - (1/η)*(dis_h + dis_g)
-        prob += soc[t] == prev_soc + EFFICIENCY * (ch_h[t] + ch_g[t]) - (1 / EFFICIENCY) * (dis_h[t] + dis_g[t])
+        prob += (soc[t] == prev_soc
+                 + (ch_h[t] + ch_g[t]) * EFFICIENCY_CHARGING
+                 - (dis_h[t] + dis_g[t]) / EFFICIENCY_DISCHARGING)
         
-        # Power Bandwidth (Rate) Constraints with Binary switch
-        # ch_h + ch_g <= max_rate_kw * is_charging
-        # dis_h + dis_g <= max_rate_kw * (1 - is_charging)
+        # Rate of (dis)charge constraints with binary switch
         prob += ch_h[t] + ch_g[t] <= max_rate_kw * is_charging[t]
         prob += dis_h[t] + dis_g[t] <= max_rate_kw * (1 - is_charging[t])
         
@@ -135,10 +135,9 @@ def strategy_linear_programming(row, future_df, current_soc, capacity_kwh, max_r
         prob += ch_h[t] <= e_prod[t]
         prob += dis_h[t] <= e_cons[t]
 
-        # State-dependent constraints (as requested by user)
-        # These ensure the plan respects current/predicted SOC limits at each step
-        prob += ch_h[t] + ch_g[t] <= (capacity_kwh - prev_soc) / EFFICIENCY
-        prob += dis_h[t] + dis_g[t] <= prev_soc * EFFICIENCY
+        # SOC limits
+        prob += (ch_h[t] + ch_g[t]) * EFFICIENCY_CHARGING <= capacity_kwh - prev_soc
+        prob += (dis_h[t] + dis_g[t]) / EFFICIENCY_DISCHARGING <= prev_soc
         
     # 6. Solve the problem
     # PULP_CBC_CMD is the default solver. We suppress output for speed.

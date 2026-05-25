@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from .constants import (
-    EFFICIENCY, NET_HOUSEHOLD, CHARGE, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
+    NET_HOUSEHOLD, CHARGE, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
     DISCHARGE, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, COST_WO_BATTERY, COST_WITH_BATTERY, NET_BUY_PRICE, NET_SELL_PRICE, TIME,
     CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY, NET_HOUSEHOLD_WITH_BATTERY, EFFICIENCY_CHARGING,
@@ -17,9 +17,8 @@ def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
     simulation_logs = []
 
     for i in range(len(sim_df)):
-        # Add a waitbar that fills up every n steps. It replaces previous print everytime:
-        n = 100
-        if i % n == 0:
+        # Add a waitbar that fills up every n steps.
+        if i % 100 == 0:
             print(f"\rSimulation progress: {i}/{len(sim_df)}", end='', flush=True)
 
         now, future_df = get_now_and_known_future(i, sim_df)
@@ -37,7 +36,7 @@ def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
         soc_charge_bump = charge * EFFICIENCY_CHARGING
         discharge = dis_h + dis_g
         soc_discharge_dip = discharge / EFFICIENCY_DISCHARGING
-        # 1. Total (dis)charge cannot exceed max rate
+        # 1. Total (dis)charge cannot exceed the max rate
         assert 0 <= charge <= max_rate_kw, f"Total charge should be between 0 and max rate"
         assert 0 <= discharge <= max_rate_kw, f"Total discharge should be between 0 and max rate"
 
