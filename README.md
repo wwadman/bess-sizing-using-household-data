@@ -2,6 +2,10 @@
 
 Analyze and simulate energy costs with Tibber and home batteries.
 
+Comparison websites like https://energienerds.nl/index.php/2025/08/26/stekkerbatterijen-de-startgids help finding your
+optimal battery configuration, but first you should decide what capacity and max rate is right for you. This repo will
+help with that.
+
 ## Features
 
 - **Energy Bill Forecasting**: Estimate your 2027 energy bill based on historical consumption and production.
