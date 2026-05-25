@@ -4,7 +4,8 @@ from .constants import (
     EFFICIENCY, NET_HOUSEHOLD, CHARGE, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
     DISCHARGE, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, COST_WO_BATTERY, COST_WITH_BATTERY, NET_BUY_PRICE, NET_SELL_PRICE, TIME,
-    CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY, NET_HOUSEHOLD_WITH_BATTERY
+    CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY, NET_HOUSEHOLD_WITH_BATTERY, EFFICIENCY_CHARGING,
+    EFFICIENCY_DISCHARGING
 )
 
 def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
@@ -31,31 +32,18 @@ def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
             max_rate_kw=max_rate_kw,
         )
 
-        # Enforce physical limits and battery constraints
-        # 1. Total (dis)charge cannot exceed max rate or battery limits
-        # Max charge is limited by remaining capacity, adjusted for efficiency losses
-        max_charge_allowed = (capacity_kwh - current_soc) / EFFICIENCY
-        # charge_kwh = max(0, min(ch_h + ch_g, max_rate_kw, max_charge_allowed))
-
-        
-        # Split back to house/grid proportionally if we had to cap it
+        # Check all physical limits and battery constraints
         charge = ch_h + ch_g
-        assert 0 <= charge, f"Total charge cannot be negative"
-        assert charge <= max_rate_kw, f"Total charge cannot exceed max rate"
-        assert charge <= max_charge_allowed * 1.01, f"Total charge cannot exceed battery capacity"
-
-        current_soc += charge * EFFICIENCY
-
-        # Max discharge is limited by current SOC, adjusted for efficiency losses
-        max_discharge_allowed = current_soc * EFFICIENCY
-        # discharge_kwh = max(0, min(dis_h + dis_g, max_rate_kw, max_discharge_allowed))
-        
+        soc_charge_bump = charge * EFFICIENCY_CHARGING
         discharge = dis_h + dis_g
-        assert 0 <= discharge, f"Total discharge cannot be negative"
-        assert discharge <= max_rate_kw, f"Total discharge cannot exceed max rate"
-        assert discharge <= max_discharge_allowed * 1.01, f"Total discharge cannot exceed battery capacity"
+        soc_discharge_dip = discharge / EFFICIENCY_DISCHARGING
+        # 1. Total (dis)charge cannot exceed max rate
+        assert 0 <= charge <= max_rate_kw, f"Total charge should be between 0 and max rate"
+        assert 0 <= discharge <= max_rate_kw, f"Total discharge should be between 0 and max rate"
 
-        current_soc -= discharge / EFFICIENCY
+        # Update SOC for next time step and check if SOC is within limits
+        current_soc = round(current_soc + soc_charge_bump - soc_discharge_dip, 3)
+        assert 0 <= current_soc <= capacity_kwh, f"Current SOC should be between 0 and battery capacity"
 
         # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
         price_this_hour = now[NET_BUY_PRICE] if now[NET_HOUSEHOLD] > 0 else now[NET_SELL_PRICE]

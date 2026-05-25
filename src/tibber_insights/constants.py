@@ -21,6 +21,8 @@ INKOOPVERGOEDING = 0.0242  # €/kWh only when consuming
 VAT_RATE = 0.21  # 21% BTW
 
 EFFICIENCY = 1  # 0.90  # Round-trip
+EFFICIENCY_CHARGING = 1
+EFFICIENCY_DISCHARGING = 1
 
 # Column names of original dataframe
 TIME = "Timestamp"  # Does not have a unit, so it is not a Quantity
