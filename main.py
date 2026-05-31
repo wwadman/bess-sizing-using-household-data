@@ -29,6 +29,8 @@ def main():
     # -- Battery simulation --------------------------------------------------------
     capacities = [5, 10, 20]
     rates = [0.8, 1.2, 2.4, 4]
+    capacities = [2000]
+    rates = [400]
     capacities = [5, 20]
     rates = [4]
 
