@@ -3,7 +3,8 @@ import pandas as pd
 import pulp
 from .constants import (NET_BUY_PRICE, NET_SELL_PRICE, PRODUCTION, CONSUMPTION_UNIT_PRICE_EUR, EXPECTED_CONSUMPTION,
                         EXPECTED_PRODUCTION, TIME, NET_VALUE, EXPECTED_MAX_CONSUMPTION,
-                        EFFICIENCY_DISCHARGING, EFFICIENCY_CHARGING)
+                        EFFICIENCY_DISCHARGING, EFFICIENCY_CHARGING,
+                        CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID)
 
 
 def strategy_arbitrage(row, future_df, current_soc, capacity_kwh, max_rate_kw):
@@ -225,18 +226,11 @@ def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
     # PULP_CBC_CMD is the default solver. We suppress output for speed.
     prob.solve(pulp.PULP_CBC_CMD(msg=0))
 
-    # 7. Extract the planned actions for the current hour (t=0)
-    # If the solver failed to find a solution (shouldn't happen here), return all zeros
-    from pandas import Timestamp
-    if pulp.LpStatus[prob.status] != 'Optimal':
-        return 0.0, 0.0, 0.0, 0.0
+    # 7. Add planned actions as columns to future_df
+    future_df = future_df.copy()
+    future_df[CHARGE_FROM_HOUSE] = [float(pulp.value(ch_h[t])) for t in range(T)]
+    future_df[CHARGE_FROM_GRID] = [float(pulp.value(ch_g[t])) for t in range(T)]
+    future_df[DISCHARGE_TO_HOUSE] = [float(pulp.value(dis_h[t])) for t in range(T)]
+    future_df[DISCHARGE_TO_GRID] = [float(pulp.value(dis_g[t])) for t in range(T)]
 
-    # Extract all planned actions for the horizon
-    results = {
-        'ch_h': [float(pulp.value(ch_h[t])) for t in range(T)],
-        'ch_g': [float(pulp.value(ch_g[t])) for t in range(T)],
-        'dis_h': [float(pulp.value(dis_h[t])) for t in range(T)],
-        'dis_g': [float(pulp.value(dis_g[t])) for t in range(T)],
-    }
-
-    return results
+    return future_df

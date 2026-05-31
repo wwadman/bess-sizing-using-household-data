@@ -27,8 +27,8 @@ def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
 
         now, future_df = get_now_and_known_future(i, sim_df_indexed)
 
-        # strategy_daily_lp now returns a dict of 24h plans
-        plan = strategy_fn(
+        # strategy_daily_lp now returns a DataFrame containing the plan
+        plan_df = strategy_fn(
             row=now,
             future_df=future_df,
             current_soc=current_soc,
@@ -43,14 +43,14 @@ def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
             idx = i + t
             row_now = sim_df_indexed.iloc[idx]
             
-            # Check if plan has enough steps (it should if future_df was large enough)
-            if t >= len(plan['ch_h']):
+            # Check if plan has enough steps
+            if t >= len(plan_df):
                 break
             
-            ch_h = plan['ch_h'][t]
-            ch_g = plan['ch_g'][t]
-            dis_h = plan['dis_h'][t]
-            dis_g = plan['dis_g'][t]
+            ch_h = plan_df.iloc[t][CHARGE_FROM_HOUSE]
+            ch_g = plan_df.iloc[t][CHARGE_FROM_GRID]
+            dis_h = plan_df.iloc[t][DISCHARGE_TO_HOUSE]
+            dis_g = plan_df.iloc[t][DISCHARGE_TO_GRID]
 
             # Check all physical limits and battery constraints
             charge = ch_h + ch_g
@@ -63,16 +63,10 @@ def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
             assert 0 <= discharge <= max_rate_kw + 1e-6, f"Total discharge {discharge} should be between 0 and max rate {max_rate_kw}"
 
             # Update SOC for next time step and check if SOC is within limits
-            current_soc = round(current_soc + soc_charge_bump - soc_discharge_dip, 6)
-            
-            # Numerical safety
-            if current_soc < 0 and current_soc > -1e-4:
-                current_soc = 0.0
-            if current_soc > capacity_kwh and current_soc < capacity_kwh + 1e-4:
-                current_soc = float(capacity_kwh)
-            
-            current_soc = round(current_soc, 3)
-            assert 0 <= current_soc <= capacity_kwh, f"Current SOC {current_soc} should be between 0 and battery capacity {capacity_kwh}"
+            current_soc = current_soc + soc_charge_bump - soc_discharge_dip
+            eps = 1e-4
+            assert -eps <= current_soc <= capacity_kwh + eps, \
+                f"Current SOC {current_soc} should be within [0, {capacity_kwh}]."
 
             # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
             price_this_hour = row_now[NET_BUY_PRICE] if row_now[NET_HOUSEHOLD] > 0 else row_now[NET_SELL_PRICE]
