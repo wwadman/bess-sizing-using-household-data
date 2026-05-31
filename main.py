@@ -35,7 +35,7 @@ def main():
     baseline_bill = forecast['net_bill_2027_eur']
 
     strategies = {
-        "strategy_daily_lp": strategy_daily_lp,
+        "Daily linear optimization": strategy_daily_lp,
     }
 
     sim_results = []

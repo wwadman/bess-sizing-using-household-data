@@ -144,14 +144,14 @@ def plot_interactive_battery_behavior(all_results, days=10):
     first_df = all_results[0]['sim_df']
     
     # Subplot 3: Prices (Common)
-    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[NET_BUY_PRICE], name=NET_BUY_PRICE, line=dict(color='orange')), row=3, col=1)
-    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[NET_SELL_PRICE], name=NET_SELL_PRICE, line=dict(color='blue')), row=3, col=1)
+    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[NET_BUY_PRICE], name=NET_BUY_PRICE, line=dict(color='orange'), legend='legend3'), row=3, col=1)
+    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[NET_SELL_PRICE], name=NET_SELL_PRICE, line=dict(color='blue'), legend='legend3'), row=3, col=1)
     
     # Subplot 2: Net Household (Common)
-    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[NET_HOUSEHOLD], name=NET_HOUSEHOLD, line=dict(color='grey', dash='dash')), row=2, col=1)
+    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[NET_HOUSEHOLD], name=NET_HOUSEHOLD, line=dict(color='grey', dash='dash'), legend='legend2'), row=2, col=1)
     
     # Subplot 4: Cost w/o battery (Common)
-    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[COST_WO_BATTERY], name=COST_WO_BATTERY, line=dict(color='gray', dash='dash')), row=4, col=1)
+    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[COST_WO_BATTERY], name=COST_WO_BATTERY, line=dict(color='gray', dash='dash'), legend='legend4'), row=4, col=1)
 
     common_trace_count = 5 # (2 prices + 1 household + 1 cost wo battery + 1 horizontal line) 
     # Wait, horizontal lines are not traces in the same way.
@@ -171,31 +171,31 @@ def plot_interactive_battery_behavior(all_results, days=10):
         group_indices = []
         
         # SOC
-        fig.add_trace(go.Scatter(x=df[TIME], y=df[SOC], name=f"SOC (Cap={cap})", line=dict(color='royalblue'), fill='tozeroy', visible=False), row=1, col=1)
+        fig.add_trace(go.Scatter(x=df[TIME], y=df[SOC], name=f"SOC (Cap={cap})", line=dict(color='royalblue'), fill='tozeroy', visible=False, showlegend=False), row=1, col=1)
         group_indices.append(len(fig.data)-1)
         
         # Net Household with battery
-        fig.add_trace(go.Scatter(x=df[TIME], y=df[NET_HOUSEHOLD_WITH_BATTERY], name=f"Net House (incl Batt)", line=dict(color='black'), visible=False), row=2, col=1)
+        fig.add_trace(go.Scatter(x=df[TIME], y=df[NET_HOUSEHOLD_WITH_BATTERY], name=f"Net House (incl Batt)", line=dict(color='black'), visible=False, legend='legend2'), row=2, col=1)
         group_indices.append(len(fig.data)-1)
         
         # Charging
-        fig.add_trace(go.Bar(x=df[TIME], y=df[CHARGE_FROM_HOUSE], name=CHARGE_FROM_HOUSE, marker_color='forestgreen', legendgroup='charge', visible=False), row=2, col=1)
+        fig.add_trace(go.Bar(x=df[TIME], y=df[CHARGE_FROM_HOUSE], name=CHARGE_FROM_HOUSE, marker_color='forestgreen', legendgroup='charge', visible=False, legend='legend2'), row=2, col=1)
         group_indices.append(len(fig.data)-1)
-        fig.add_trace(go.Bar(x=df[TIME], y=df[CHARGE_FROM_GRID], name=CHARGE_FROM_GRID, marker_color='lightgreen', legendgroup='charge', visible=False), row=2, col=1)
+        fig.add_trace(go.Bar(x=df[TIME], y=df[CHARGE_FROM_GRID], name=CHARGE_FROM_GRID, marker_color='lightgreen', legendgroup='charge', visible=False, legend='legend2'), row=2, col=1)
         group_indices.append(len(fig.data)-1)
         
         # Discharging
-        fig.add_trace(go.Bar(x=df[TIME], y=-df[DISCHARGE_TO_HOUSE], name=DISCHARGE_TO_HOUSE, marker_color='firebrick', legendgroup='discharge', visible=False), row=2, col=1)
+        fig.add_trace(go.Bar(x=df[TIME], y=-df[DISCHARGE_TO_HOUSE], name=DISCHARGE_TO_HOUSE, marker_color='firebrick', legendgroup='discharge', visible=False, legend='legend2'), row=2, col=1)
         group_indices.append(len(fig.data)-1)
-        fig.add_trace(go.Bar(x=df[TIME], y=-df[DISCHARGE_TO_GRID], name=DISCHARGE_TO_GRID, marker_color='salmon', legendgroup='discharge', visible=False), row=2, col=1)
+        fig.add_trace(go.Bar(x=df[TIME], y=-df[DISCHARGE_TO_GRID], name=DISCHARGE_TO_GRID, marker_color='salmon', legendgroup='discharge', visible=False, legend='legend2'), row=2, col=1)
         group_indices.append(len(fig.data)-1)
         
         # Cost with battery
-        fig.add_trace(go.Scatter(x=df[TIME], y=df[COST_WITH_BATTERY], name=COST_WITH_BATTERY, line=dict(color='indigo'), visible=False), row=4, col=1)
+        fig.add_trace(go.Scatter(x=df[TIME], y=df[COST_WITH_BATTERY], name=COST_WITH_BATTERY, line=dict(color='indigo'), visible=False, legend='legend4'), row=4, col=1)
         group_indices.append(len(fig.data)-1)
         
         # Savings per day
-        fig.add_trace(go.Bar(x=df[TIME], y=df[SAVINGS_PER_DAY], name=SAVINGS_PER_DAY, visible=False), row=4, col=1)
+        fig.add_trace(go.Bar(x=df[TIME], y=df[SAVINGS_PER_DAY], name=SAVINGS_PER_DAY, visible=False, legend='legend4'), row=4, col=1)
         group_indices.append(len(fig.data)-1)
         
         trace_groups.append({
@@ -290,7 +290,11 @@ def plot_interactive_battery_behavior(all_results, days=10):
         ],
         height=1000,
         template="plotly_white",
-        hovermode='x unified'
+        hovermode='x unified',
+        showlegend=True,
+        legend2=dict(orientation="h", yanchor="top", y=0.79, xanchor="right", x=1),
+        legend3=dict(orientation="h", yanchor="top", y=0.41, xanchor="right", x=1),
+        legend4=dict(orientation="h", yanchor="top", y=0.19, xanchor="right", x=1),
     )
 
     fig.update_yaxes(fixedrange=True)
