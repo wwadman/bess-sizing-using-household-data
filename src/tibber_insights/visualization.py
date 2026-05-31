@@ -10,6 +10,106 @@ from .constants import (
 )
 
 
+def _create_base_figure():
+    fig = make_subplots(
+        rows=4, cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.05,
+        subplot_titles=(
+            "State of Charge (SOC)",
+            "Power Flows (Charging/Discharging)",
+            "Buy/Sell Net Prices",
+            "Cost Comparison"
+        ),
+        row_heights=[0.1, 0.2, 0.1, 0.1],
+    )
+    return fig
+
+
+def _add_interactive_trace(fig, subplot_row, quantity, y_values, current_df, visible=True, trace_type=go.Scatter, **kwargs):
+    trace = trace_type(
+        x=current_df[TIME],
+        y=y_values,
+        name=quantity,
+        legend=f'legend{subplot_row}',
+        hovertemplate=f"{quantity}: %{{y:.3f}} {quantity.unit}<extra></extra>",
+        visible=visible,
+        **kwargs
+    )
+    fig.add_trace(trace, row=subplot_row, col=1)
+    fig.update_yaxes(title_text=quantity.unit, row=subplot_row, col=1)
+    return len(fig.data) - 1
+
+
+def _add_common_traces(fig, first_df):
+    indices = [
+        _add_interactive_trace(fig, 3, NET_BUY_PRICE, first_df[NET_BUY_PRICE], first_df, line=dict(color='orange')),
+        _add_interactive_trace(fig, 3, NET_SELL_PRICE, first_df[NET_SELL_PRICE], first_df, line=dict(color='blue')),
+        _add_interactive_trace(fig, 2, NET_HOUSEHOLD, first_df[NET_HOUSEHOLD], first_df, line=dict(color='grey', dash='dash')),
+        _add_interactive_trace(fig, 4, COST_WO_BATTERY, first_df[COST_WO_BATTERY], first_df, line=dict(color='gray', dash='dash')),
+    ]
+    # Add horizontal lines (static)
+    fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
+    fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=4, col=1)
+    return indices
+
+
+def _add_result_traces(fig, all_results):
+    trace_groups = []
+    for res in all_results:
+        df = res['sim_df']
+        group_indices = [
+            _add_interactive_trace(fig, 1, SOC, df[SOC], df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
+            _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BATTERY, df[NET_HOUSEHOLD_WITH_BATTERY], df, visible=False, line=dict(color='black')),
+            _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df[CHARGE_FROM_HOUSE], df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
+            _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df[CHARGE_FROM_GRID], df, visible=False, trace_type=go.Bar, marker_color='lightgreen', legendgroup='charge'),
+            _add_interactive_trace(fig, 2, DISCHARGE_TO_HOUSE, -df[DISCHARGE_TO_HOUSE], df, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
+            _add_interactive_trace(fig, 2, DISCHARGE_TO_GRID, -df[DISCHARGE_TO_GRID], df, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
+            _add_interactive_trace(fig, 4, COST_WITH_BATTERY, df[COST_WITH_BATTERY], df, visible=False, line=dict(color='indigo')),
+            _add_interactive_trace(fig, 4, SAVINGS_PER_DAY, df[SAVINGS_PER_DAY], df, visible=False, trace_type=go.Bar),
+        ]
+        trace_groups.append({
+            CAPACITY: res[CAPACITY],
+            CHARGING_RATE: res[CHARGING_RATE],
+            STRATEGY: res[STRATEGY],
+            'indices': group_indices
+        })
+    return trace_groups
+
+
+def _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_quantities):
+    def get_visibility_filter(dim_key, value):
+        vis = [False] * len(fig.data)
+        for idx in common_trace_indices:
+            vis[idx] = True
+        for group in trace_groups:
+            if group[dim_key] == value:
+                for idx in group['indices']:
+                    vis[idx] = True
+        return vis
+
+    updatemenus = []
+    x_positions = [0.35, 0.5, 0.65]
+    for i, (quantity_to_filter, values) in enumerate(dropdown_quantities.items()):
+        buttons = []
+        for val in values:
+            buttons.append(dict(
+                method="update",
+                label=f"{quantity_to_filter}: {val} {quantity_to_filter.unit}",
+                args=[{"visible": get_visibility_filter(quantity_to_filter, val)},
+                      {"title": f"Battery Behavior (Filtered by {quantity_to_filter}: {val})"}]
+            ))
+        updatemenus.append(dict(
+            buttons=buttons,
+            direction="down",
+            showactive=True,
+            x=x_positions[i], xanchor="center",
+            y=1.15, yanchor="top",
+            font=dict(size=14)
+        ))
+    return updatemenus
+
+
 def plot_interactive_battery_behavior(all_results, days=10):
     """
     Creates a single plot with dropdowns to switch between different
@@ -27,66 +127,9 @@ def plot_interactive_battery_behavior(all_results, days=10):
     # We use the first result to get the base layout and shared traces (like prices)
     first_df = all_results[0]['sim_df']
     
-    fig = make_subplots(
-        rows=4, cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.05,
-        subplot_titles=(
-            "State of Charge (SOC)",
-            "Power Flows (Charging/Discharging)",
-            "Buy/Sell Net Prices",
-            "Cost Comparison"
-        ),
-        row_heights=[0.1, 0.2, 0.1, 0.1],
-    )
-
-    def add_interactive_trace(subplot_row, quantity, y_values, current_df, visible=True, trace_type=go.Scatter, **kwargs):
-        trace = trace_type(
-            x=current_df[TIME],
-            y=y_values,
-            name=quantity,
-            legend=f'legend{subplot_row}',
-            hovertemplate=f"{quantity}: %{{y:.3f}} {quantity.unit}<extra></extra>",
-            visible=visible,
-            **kwargs
-        )
-        fig.add_trace(trace, row=subplot_row, col=1)
-        fig.update_yaxes(title_text=quantity.unit, row=subplot_row, col=1)
-        return len(fig.data) - 1
-
-    # Common traces (Prices, Household, Cost w/o battery)
-    common_trace_indices = [
-        add_interactive_trace(3, NET_BUY_PRICE, first_df[NET_BUY_PRICE], first_df, line=dict(color='orange')),
-        add_interactive_trace(3, NET_SELL_PRICE, first_df[NET_SELL_PRICE], first_df, line=dict(color='blue')),
-        add_interactive_trace(2, NET_HOUSEHOLD, first_df[NET_HOUSEHOLD], first_df, line=dict(color='grey', dash='dash')),
-        add_interactive_trace(4, COST_WO_BATTERY, first_df[COST_WO_BATTERY], first_df, line=dict(color='gray', dash='dash')),
-    ]
-    
-    # Add horizontal lines (static)
-    fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
-    fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=4, col=1)
-
-    trace_groups = [] # List of (capacity, rate, strategy, list_of_trace_indices)
-    for res in all_results:
-        df = res['sim_df']
-
-        group_indices = [
-            add_interactive_trace(1, SOC, df[SOC], df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
-            add_interactive_trace(2, NET_HOUSEHOLD_WITH_BATTERY, df[NET_HOUSEHOLD_WITH_BATTERY], df, visible=False, line=dict(color='black')),
-            add_interactive_trace(2, CHARGE_FROM_HOUSE, df[CHARGE_FROM_HOUSE], df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
-            add_interactive_trace(2, CHARGE_FROM_GRID, df[CHARGE_FROM_GRID], df, visible=False, trace_type=go.Bar, marker_color='lightgreen', legendgroup='charge'),
-            add_interactive_trace(2, DISCHARGE_TO_HOUSE, -df[DISCHARGE_TO_HOUSE], df, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
-            add_interactive_trace(2, DISCHARGE_TO_GRID, -df[DISCHARGE_TO_GRID], df, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
-            add_interactive_trace(4, COST_WITH_BATTERY, df[COST_WITH_BATTERY], df, visible=False, line=dict(color='indigo')),
-            add_interactive_trace(4, SAVINGS_PER_DAY, df[SAVINGS_PER_DAY], df, visible=False, trace_type=go.Bar),
-        ]
-        
-        trace_groups.append({
-            CAPACITY: res[CAPACITY],
-            CHARGING_RATE: res[CHARGING_RATE],
-            STRATEGY: res[STRATEGY],
-            'indices': group_indices
-        })
+    fig = _create_base_figure()
+    common_trace_indices = _add_common_traces(fig, first_df)
+    trace_groups = _add_result_traces(fig, all_results)
 
     # Set initial visible
     for idx in common_trace_indices:
@@ -96,46 +139,7 @@ def plot_interactive_battery_behavior(all_results, days=10):
     for idx in trace_groups[0]['indices']:
         fig.data[idx].visible = True
 
-    # Dropdown menus
-    # To have 3 independent dropdowns in pure Plotly, we can't easily do "AND" filtering
-    # because each button must provide a complete visibility list for all traces.
-    # However, we can provide 3 dropdowns that each control one dimension, 
-    # but they will effectively reset the others, or we can use a more clever approach.
-    # Given the constraint of pure Plotly, the most reliable way to have 3 buttons
-    # is to have them filter by that specific dimension, showing all results that match.
-    
-    def get_visibility_filter(dim_key, value):
-        vis = [False] * len(fig.data)
-        for idx in common_trace_indices:
-            vis[idx] = True
-        for group in trace_groups:
-            if group[dim_key] == value:
-                for idx in group['indices']:
-                    vis[idx] = True
-        return vis
-
-    # Generate buttons and updatemenus dynamically
-    updatemenus = []
-    x_positions = [0.35, 0.5, 0.65]
-    
-    for i, (quantity_to_filter, values) in enumerate(dropdown_quantities.items()):
-        buttons = []
-        for val in values:
-            buttons.append(dict(
-                method="update",
-                label=f"{quantity_to_filter}: {val} {quantity_to_filter.unit}",
-                args=[{"visible": get_visibility_filter(quantity_to_filter, val)},
-                      {"title": f"Battery Behavior vzxcvzxcvxcv (Filtered by {quantity_to_filter}: {val})"}]
-            ))
-        
-        updatemenus.append(dict(
-            buttons=buttons,
-            direction="down",
-            showactive=True,
-            x=x_positions[i], xanchor="center",
-            y=1.15, yanchor="top",
-            font=dict(size=14)
-        ))
+    updatemenus = _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_quantities)
 
     fig.update_layout(
         updatemenus=updatemenus,
