@@ -214,53 +214,86 @@ def plot_interactive_battery_behavior(all_results, days=10):
         fig.data[idx].visible = True
 
     # Dropdown menus
-    # Since we have 3 dimensions, and Plotly updatemenus are usually 1D filters, 
-    # we need to create buttons that trigger based on the COMBINATION of selections.
-    # Alternatively, we can have 3 dropdowns that each update visibility.
-    # But a single button can only set visibility to a fixed list.
+    # To have 3 independent dropdowns in pure Plotly, we can't easily do "AND" filtering
+    # because each button must provide a complete visibility list for all traces.
+    # However, we can provide 3 dropdowns that each control one dimension, 
+    # but they will effectively reset the others, or we can use a more clever approach.
+    # Given the constraint of pure Plotly, the most reliable way to have 3 buttons
+    # is to have them filter by that specific dimension, showing all results that match.
     
-    # A better approach for multi-dimension in Plotly is to have one dropdown that lists ALL combinations
-    # OR use custom JS (which is harder in this environment).
-    # Let's try 3 separate dropdowns where each one filters the set.
-    
-    def get_visibility(cap, rate, strategy):
+    def get_visibility_filter(dim, value):
         vis = [False] * len(fig.data)
         for idx in common_trace_indices:
             vis[idx] = True
         for group in trace_groups:
-            if group['capacity'] == cap and group['rate'] == rate and group['strategy_name'] == strategy:
+            if group[dim] == value:
                 for idx in group['indices']:
                     vis[idx] = True
         return vis
 
-    # If we want 3 independent dropdowns, we'd need them to "know" each other's state.
-    # Plotly's updatemenus don't easily support this without Dash.
-    # The simplest way is a single dropdown with all combinations: "Cap=5, Rate=0.8, Strategy=..."
-    # Or, we can use the 'restyle' method with a bit more complexity.
-    
-    # Let's go with a single dropdown for now as it's the most robust with pure Plotly.
-    buttons = []
-    for group in trace_groups:
-        label = f"Cap:{group['capacity']} Rate:{group['rate']} {group['strategy_name']}"
-        buttons.append(dict(
+    # Capacity dropdown
+    cap_buttons = []
+    for cap in capacities:
+        cap_buttons.append(dict(
             method="update",
-            label=label,
-            args=[{"visible": get_visibility(group['capacity'], group['rate'], group['strategy_name'])},
-                  {"title": f"Battery Behavior: {label}"}]
+            label=f"Cap: {cap}",
+            args=[{"visible": get_visibility_filter('capacity', cap)},
+                  {"title": f"Battery Behavior (Filtered by Capacity: {cap})"}]
+        ))
+
+    # Rate dropdown
+    rate_buttons = []
+    for r in rates:
+        rate_buttons.append(dict(
+            method="update",
+            label=f"Rate: {r}",
+            args=[{"visible": get_visibility_filter('rate', r)},
+                  {"title": f"Battery Behavior (Filtered by Rate: {r})"}]
+        ))
+
+    # Strategy dropdown
+    strat_buttons = []
+    for s in strategies:
+        strat_buttons.append(dict(
+            method="update",
+            label=f"Strat: {s}",
+            args=[{"visible": get_visibility_filter('strategy_name', s)},
+                  {"title": f"Battery Behavior (Filtered by Strategy: {s})"}]
         ))
 
     fig.update_layout(
-        updatemenus=[dict(
-            buttons=buttons,
-            direction="down",
-            showactive=True,
-            x=0.5, xanchor="left",
-            y=1.15, yanchor="top"
-        )],
+        updatemenus=[
+            dict(
+                buttons=cap_buttons,
+                direction="down",
+                showactive=True,
+                x=0.35, xanchor="center",
+                y=1.15, yanchor="top",
+                font=dict(size=14)
+            ),
+            dict(
+                buttons=rate_buttons,
+                direction="down",
+                showactive=True,
+                x=0.5, xanchor="center",
+                y=1.15, yanchor="top",
+                font=dict(size=14)
+            ),
+            dict(
+                buttons=strat_buttons,
+                direction="down",
+                showactive=True,
+                x=0.65, xanchor="center",
+                y=1.15, yanchor="top",
+                font=dict(size=14)
+            )
+        ],
         height=1000,
         template="plotly_white",
         hovermode='x unified'
     )
+
+    fig.update_yaxes(fixedrange=True)
 
     if days:
         end_date = first_df[TIME].max()
