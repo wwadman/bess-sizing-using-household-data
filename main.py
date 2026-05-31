@@ -70,8 +70,7 @@ def main():
                 'savings_pct': savings / baseline_bill * 100,
             })
 
-    if behavior_plots_data:
-        plot_interactive_battery_behavior(behavior_plots_data, days=10)
+    plot_interactive_battery_behavior(behavior_plots_data, days=10)
 
     results_df = pd.DataFrame(sim_results)
 

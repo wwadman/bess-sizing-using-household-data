@@ -10,7 +10,68 @@ from .constants import (
 )
 
 
+def plot_interactive_battery_behavior(all_results, days=10):
+    """
+    Creates an interactive Plotly figure with 4 subplots showing battery behavior over time.
+    
+    The plot includes three independent dropdown menus at the top to filter simulation
+    results by Capacity, Charging Rate, and Strategy.
+
+    Args:
+        all_results (list): A list of dictionaries, each containing:
+            - 'sim_df' (pd.DataFrame): Simulation results with TIME, SOC, power flows, etc.
+            - CAPACITY (Quantity): The battery capacity used in the simulation.
+            - CHARGING_RATE (Quantity): The charging rate used in the simulation.
+            - STRATEGY (str): The name of the optimization strategy used.
+        days (int, optional): The number of days to show by default (zoomed in).
+            Defaults to 10.
+    """
+
+    # Create all stuff that does not change when toggling anything from the dropdowns
+    fig = _create_base_figure()
+    first_df = all_results[0]['sim_df']  # to get the base layout and shared traces (like prices)
+    common_trace_indices = _add_common_traces(fig, first_df)
+    for idx in common_trace_indices:
+        fig.data[idx].visible = True  # Set initial visible
+
+    # Create all stuff that does change when toggling anything from the dropdowns
+    trace_groups = _add_result_traces(fig, all_results)
+    for idx in trace_groups[0]['indices']:
+        fig.data[idx].visible = True  # Show by default the first group from dropdown menu
+
+    # Extract unique values for dropdowns and map them to their constants
+    values_per_dropdown_quantity = {q: sorted(list(set(r[q] for r in all_results))) for q in DROPDOWN_QUANTITIES}
+    update_menus = _create_dropdown_menus(fig, common_trace_indices, trace_groups, values_per_dropdown_quantity)
+
+    fig.update_layout(
+        updatemenus=update_menus,
+        height=1000,
+        template="plotly_white",
+        hovermode='x unified',
+        showlegend=True,
+        legend2=dict(orientation="h", yanchor="top", y=0.79, xanchor="right", x=1),
+        legend3=dict(orientation="h", yanchor="top", y=0.41, xanchor="right", x=1),
+        legend4=dict(orientation="h", yanchor="top", y=0.19, xanchor="right", x=1),
+        barmode='relative'
+    )
+
+    fig.update_yaxes(fixedrange=True)
+
+    if days:
+        end_date = first_df[TIME].max()
+        start_date = end_date - pd.Timedelta(days=days)
+        fig.update_xaxes(range=[start_date, end_date])
+
+    fig.show()
+
+
 def _create_base_figure():
+    """
+    Initializes a 4-row Plotly figure with shared X-axes and predefined subplot titles.
+
+    Returns:
+        plotly.graph_objects.Figure: The skeleton figure for the interactive plot.
+    """
     fig = make_subplots(
         rows=4, cols=1,
         shared_xaxes=True,
@@ -18,7 +79,7 @@ def _create_base_figure():
         subplot_titles=(
             "State of Charge (SOC)",
             "Power Flows (Charging/Discharging)",
-            "Buy/Sell Net Prices",
+            "Net Buy/Sell Prices",
             "Cost Comparison"
         ),
         row_heights=[0.1, 0.2, 0.1, 0.1],
@@ -27,6 +88,26 @@ def _create_base_figure():
 
 
 def _add_interactive_trace(fig, subplot_row, quantity, y_values, current_df, visible=True, trace_type=go.Scatter, **kwargs):
+    """
+    Adds a standardized trace to a specific subplot in the interactive figure.
+
+    This helper function configures the legend, hover template, and Y-axis units
+    for a given trace.
+
+    Args:
+        fig (plotly.graph_objects.Figure): The figure to add the trace to.
+        subplot_row (int): The row index (1-based) of the subplot.
+        quantity (Quantity): The quantity being plotted (used for naming and units).
+        y_values (iterable): The data for the Y-axis.
+        current_df (pd.DataFrame): The source DataFrame (used for the TIME X-axis).
+        visible (bool or "legendonly", optional): Initial visibility of the trace. Defaults to True.
+        trace_type (type, optional): The Plotly trace class (e.g., go.Scatter, go.Bar).
+            Defaults to go.Scatter.
+        **kwargs: Additional keyword arguments passed to the trace constructor.
+
+    Returns:
+        int: The index of the added trace in `fig.data`.
+    """
     trace = trace_type(
         x=current_df[TIME],
         y=y_values,
@@ -42,6 +123,18 @@ def _add_interactive_trace(fig, subplot_row, quantity, y_values, current_df, vis
 
 
 def _add_common_traces(fig, first_df):
+    """
+    Adds static traces that are shared across all simulation configurations.
+
+    Includes prices, baseline household consumption, and horizontal reference lines.
+
+    Args:
+        fig (plotly.graph_objects.Figure): The figure to add traces to.
+        first_df (pd.DataFrame): A DataFrame containing the common data.
+
+    Returns:
+        list[int]: The indices of the added common traces in `fig.data`.
+    """
     indices = [
         _add_interactive_trace(fig, 3, NET_BUY_PRICE, first_df[NET_BUY_PRICE], first_df, line=dict(color='orange')),
         _add_interactive_trace(fig, 3, NET_SELL_PRICE, first_df[NET_SELL_PRICE], first_df, line=dict(color='blue')),
@@ -55,6 +148,20 @@ def _add_common_traces(fig, first_df):
 
 
 def _add_result_traces(fig, all_results):
+    """
+    Adds all simulation-specific traces to the figure, initially hidden.
+
+    Iterates through all simulation results and creates traces for SOC, power flows,
+    costs, and savings. These are grouped by their configuration metadata.
+
+    Args:
+        fig (plotly.graph_objects.Figure): The figure to add traces to.
+        all_results (list): The list of result dictionaries from the main simulation.
+
+    Returns:
+        list[dict]: A list of trace groups, each containing metadata and the
+            indices of its associated traces in `fig.data`.
+    """
     trace_groups = []
     for res in all_results:
         df = res['sim_df']
@@ -78,6 +185,18 @@ def _add_result_traces(fig, all_results):
 
 
 def _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_quantities):
+    """
+    Constructs the Plotly updatemenus for Capacity, Charging Rate, and Strategy.
+
+    Args:
+        fig (plotly.graph_objects.Figure): The figure to apply the menus to.
+        common_trace_indices (list[int]): Indices of traces that should always be visible.
+        trace_groups (list[dict]): Metadata and indices for each simulation configuration.
+        dropdown_quantities (dict): Mapping of Quantity constants to their sorted unique values.
+
+    Returns:
+        list[dict]: A list of Plotly updatemenu configurations.
+    """
     def get_visibility_filter(dim_key, value):
         vis = [False] * len(fig.data)
         for idx in common_trace_indices:
@@ -88,7 +207,7 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_qua
                     vis[idx] = True
         return vis
 
-    updatemenus = []
+    update_menus = []
     x_positions = [0.35, 0.5, 0.65]
     for i, (quantity_to_filter, values) in enumerate(dropdown_quantities.items()):
         buttons = []
@@ -99,7 +218,7 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_qua
                 args=[{"visible": get_visibility_filter(quantity_to_filter, val)},
                       {"title": f"Battery Behavior (Filtered by {quantity_to_filter}: {val})"}]
             ))
-        updatemenus.append(dict(
+        update_menus.append(dict(
             buttons=buttons,
             direction="down",
             showactive=True,
@@ -107,63 +226,19 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_qua
             y=1.15, yanchor="top",
             font=dict(size=14)
         ))
-    return updatemenus
-
-
-def plot_interactive_battery_behavior(all_results, days=10):
-    """
-    Creates a single plot with dropdowns to switch between different
-    capacities, rates, and strategies.
-    
-    all_results: List of dicts with keys:
-                 ['sim_df'] + [CAPACITY, CHARGING_RATE, STRATEGY]
-    """
-    if not all_results:
-        return
-
-    # Extract unique values for dropdowns and map them to their constants
-    dropdown_quantities = {q: sorted(list(set(r[q] for r in all_results))) for q in DROPDOWN_QUANTITIES}
-
-    # We use the first result to get the base layout and shared traces (like prices)
-    first_df = all_results[0]['sim_df']
-    
-    fig = _create_base_figure()
-    common_trace_indices = _add_common_traces(fig, first_df)
-    trace_groups = _add_result_traces(fig, all_results)
-
-    # Set initial visible
-    for idx in common_trace_indices:
-        fig.data[idx].visible = True
-    
-    # Show first group by default
-    for idx in trace_groups[0]['indices']:
-        fig.data[idx].visible = True
-
-    updatemenus = _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_quantities)
-
-    fig.update_layout(
-        updatemenus=updatemenus,
-        height=1000,
-        template="plotly_white",
-        hovermode='x unified',
-        showlegend=True,
-        legend2=dict(orientation="h", yanchor="top", y=0.79, xanchor="right", x=1),
-        legend3=dict(orientation="h", yanchor="top", y=0.41, xanchor="right", x=1),
-        legend4=dict(orientation="h", yanchor="top", y=0.19, xanchor="right", x=1),
-        barmode='relative'
-    )
-
-    fig.update_yaxes(fixedrange=True)
-
-    if days:
-        end_date = first_df[TIME].max()
-        start_date = end_date - pd.Timedelta(days=days)
-        fig.update_xaxes(range=[start_date, end_date])
-
-    fig.show()
+    return update_menus
 
 
 def plot_battery_savings_surface(results_df, strategy_name, rates, capacities):
+    """
+    Creates a 3D surface plot showing annual savings vs. capacity and rate.
+
+    Args:
+        results_df (pd.DataFrame): The aggregated simulation results.
+        strategy_name (str): The name of the strategy to visualize.
+        rates (list): The charging rates to display on the X-axis.
+        capacities (list): The capacities to display on the Y-axis.
+    """
     pivot = results_df[results_df[STRATEGY] == strategy_name] \
         .pivot(index=CAPACITY, columns=CHARGING_RATE, values='annual_savings_eur') \
         .fillna(0)
