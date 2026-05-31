@@ -50,6 +50,11 @@ SAVINGS_PER_DAY = Quantity("Savings per day", EUR)
 NET_VALUE = Quantity("Net value", EUR)
 EXPECTED_MAX_CONSUMPTION = Quantity("Expected max consumption", KWH)
 
+# Quantities to filter above plots in dropdown menu
+CAPACITY = Quantity("Capacity", KWH)
+CHARGING_RATE = Quantity("Charging rate", KW)
+STRATEGY = Quantity("Strategy", "")
+DROPDOWN_QUANTITIES = [CAPACITY, CHARGING_RATE, STRATEGY]
 
 if __name__ == "__main__":
     print(f"{NET_HOUSEHOLD.l} ({NET_HOUSEHOLD.unit})")

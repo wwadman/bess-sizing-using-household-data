@@ -5,7 +5,8 @@ from .constants import (
     NET_HOUSEHOLD, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BATTERY, COST_WITH_BATTERY,
     EUR, KW, KWH, TIME, SAVINGS_PER_DAY,
-    NET_HOUSEHOLD_WITH_BATTERY
+    NET_HOUSEHOLD_WITH_BATTERY,
+    CAPACITY, CHARGING_RATE, STRATEGY, DROPDOWN_QUANTITIES
 )
 
 def plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=3, show=True):
@@ -105,19 +106,16 @@ def plot_interactive_battery_behavior(all_results, days=10):
     capacities, rates, and strategies.
     
     all_results: List of dicts with keys:
-                 ['sim_df', 'capacity', 'rate', 'strategy_name']
+                 ['sim_df'] + [CAPACITY, CHARGING_RATE, STRATEGY]
     """
     if not all_results:
         return
 
-    # Extract unique values for dropdowns
-    capacities = sorted(list(set(r['capacity'] for r in all_results)))
-    rates = sorted(list(set(r['rate'] for r in all_results)))
-    strategies = sorted(list(set(r['strategy_name'] for r in all_results)))
+    # Extract unique values for dropdowns and map them to their constants
+    dropdown_quantities = {q: sorted(list(set(r[q] for r in all_results))) for q in DROPDOWN_QUANTITIES}
 
     # We use the first result to get the base layout and shared traces (like prices)
-    # Actually, prices and consumption are shared across all results.
-    # But SOC and Battery flows change.
+    first_df = all_results[0]['sim_df']
     
     fig = make_subplots(
         rows=4, cols=1,
@@ -132,76 +130,54 @@ def plot_interactive_battery_behavior(all_results, days=10):
         row_heights=[0.1, 0.2, 0.1, 0.1],
     )
 
-    # To maintain zoom, we don't recreate the figure. We add all traces and toggle visibility.
-    # Trace indices mapping
-    trace_groups = [] # List of (capacity, rate, strategy, list_of_trace_indices)
+    def add_interactive_trace(subplot_row, quantity, y_values, current_df, visible=True, trace_type=go.Scatter, **kwargs):
+        trace = trace_type(
+            x=current_df[TIME],
+            y=y_values,
+            name=quantity,
+            legend=f'legend{subplot_row}',
+            hovertemplate=f"{quantity}: %{{y:.3f}} {quantity.unit}<extra></extra>",
+            visible=visible,
+            **kwargs
+        )
+        fig.add_trace(trace, row=subplot_row, col=1)
+        fig.update_yaxes(title_text=quantity.unit, row=subplot_row, col=1)
+        return len(fig.data) - 1
 
-    # Common traces (Prices) - we only need to add them once if they are the same
-    # But for simplicity and avoiding indexing headaches, let's just add everything per combination.
-    # Or add common traces once and never hide them.
-    # Consumption (NET_HOUSEHOLD) and Prices are common.
-    
-    first_df = all_results[0]['sim_df']
-    
-    # Subplot 3: Prices (Common)
-    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[NET_BUY_PRICE], name=NET_BUY_PRICE, line=dict(color='orange'), legend='legend3'), row=3, col=1)
-    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[NET_SELL_PRICE], name=NET_SELL_PRICE, line=dict(color='blue'), legend='legend3'), row=3, col=1)
-    
-    # Subplot 2: Net Household (Common)
-    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[NET_HOUSEHOLD], name=NET_HOUSEHOLD, line=dict(color='grey', dash='dash'), legend='legend2'), row=2, col=1)
-    
-    # Subplot 4: Cost w/o battery (Common)
-    fig.add_trace(go.Scatter(x=first_df[TIME], y=first_df[COST_WO_BATTERY], name=COST_WO_BATTERY, line=dict(color='gray', dash='dash'), legend='legend4'), row=4, col=1)
-
-    common_trace_count = 5 # (2 prices + 1 household + 1 cost wo battery + 1 horizontal line) 
-    # Wait, horizontal lines are not traces in the same way.
+    # Common traces (Prices, Household, Cost w/o battery)
+    common_trace_indices = [
+        add_interactive_trace(3, NET_BUY_PRICE, first_df[NET_BUY_PRICE], first_df, line=dict(color='orange')),
+        add_interactive_trace(3, NET_SELL_PRICE, first_df[NET_SELL_PRICE], first_df, line=dict(color='blue')),
+        add_interactive_trace(2, NET_HOUSEHOLD, first_df[NET_HOUSEHOLD], first_df, line=dict(color='grey', dash='dash')),
+        add_interactive_trace(4, COST_WO_BATTERY, first_df[COST_WO_BATTERY], first_df, line=dict(color='gray', dash='dash')),
+    ]
     
     # Add horizontal lines (static)
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=4, col=1)
 
-    common_trace_indices = list(range(len(fig.data)))
-
+    trace_groups = [] # List of (capacity, rate, strategy, list_of_trace_indices)
     for res in all_results:
-        cap = res['capacity']
-        r = res['rate']
-        s = res['strategy_name']
+        cap = res[CAPACITY]
+        r = res[CHARGING_RATE]
+        s = res[STRATEGY]
         df = res['sim_df']
         
-        group_indices = []
-        
-        # SOC
-        fig.add_trace(go.Scatter(x=df[TIME], y=df[SOC], name=f"SOC (Cap={cap})", line=dict(color='royalblue'), fill='tozeroy', visible=False, showlegend=False), row=1, col=1)
-        group_indices.append(len(fig.data)-1)
-        
-        # Net Household with battery
-        fig.add_trace(go.Scatter(x=df[TIME], y=df[NET_HOUSEHOLD_WITH_BATTERY], name=f"Net House (incl Batt)", line=dict(color='black'), visible=False, legend='legend2'), row=2, col=1)
-        group_indices.append(len(fig.data)-1)
-        
-        # Charging
-        fig.add_trace(go.Bar(x=df[TIME], y=df[CHARGE_FROM_HOUSE], name=CHARGE_FROM_HOUSE, marker_color='forestgreen', legendgroup='charge', visible=False, legend='legend2'), row=2, col=1)
-        group_indices.append(len(fig.data)-1)
-        fig.add_trace(go.Bar(x=df[TIME], y=df[CHARGE_FROM_GRID], name=CHARGE_FROM_GRID, marker_color='lightgreen', legendgroup='charge', visible=False, legend='legend2'), row=2, col=1)
-        group_indices.append(len(fig.data)-1)
-        
-        # Discharging
-        fig.add_trace(go.Bar(x=df[TIME], y=-df[DISCHARGE_TO_HOUSE], name=DISCHARGE_TO_HOUSE, marker_color='firebrick', legendgroup='discharge', visible=False, legend='legend2'), row=2, col=1)
-        group_indices.append(len(fig.data)-1)
-        fig.add_trace(go.Bar(x=df[TIME], y=-df[DISCHARGE_TO_GRID], name=DISCHARGE_TO_GRID, marker_color='salmon', legendgroup='discharge', visible=False, legend='legend2'), row=2, col=1)
-        group_indices.append(len(fig.data)-1)
-        
-        # Cost with battery
-        fig.add_trace(go.Scatter(x=df[TIME], y=df[COST_WITH_BATTERY], name=COST_WITH_BATTERY, line=dict(color='indigo'), visible=False, legend='legend4'), row=4, col=1)
-        group_indices.append(len(fig.data)-1)
-        
-        # Savings per day
-        fig.add_trace(go.Bar(x=df[TIME], y=df[SAVINGS_PER_DAY], name=SAVINGS_PER_DAY, visible=False, legend='legend4'), row=4, col=1)
-        group_indices.append(len(fig.data)-1)
+        group_indices = [
+            add_interactive_trace(1, SOC, df[SOC], df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
+            add_interactive_trace(2, NET_HOUSEHOLD_WITH_BATTERY, df[NET_HOUSEHOLD_WITH_BATTERY], df, visible=False, line=dict(color='black')),
+            add_interactive_trace(2, CHARGE_FROM_HOUSE, df[CHARGE_FROM_HOUSE], df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
+            add_interactive_trace(2, CHARGE_FROM_GRID, df[CHARGE_FROM_GRID], df, visible=False, trace_type=go.Bar, marker_color='lightgreen', legendgroup='charge'),
+            add_interactive_trace(2, DISCHARGE_TO_HOUSE, -df[DISCHARGE_TO_HOUSE], df, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
+            add_interactive_trace(2, DISCHARGE_TO_GRID, -df[DISCHARGE_TO_GRID], df, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
+            add_interactive_trace(4, COST_WITH_BATTERY, df[COST_WITH_BATTERY], df, visible=False, line=dict(color='indigo')),
+            add_interactive_trace(4, SAVINGS_PER_DAY, df[SAVINGS_PER_DAY], df, visible=False, trace_type=go.Bar),
+        ]
         
         trace_groups.append({
-            'capacity': cap,
-            'rate': r,
-            'strategy_name': s,
+            CAPACITY: cap,
+            CHARGING_RATE: r,
+            STRATEGY: s,
             'indices': group_indices
         })
 
@@ -221,73 +197,41 @@ def plot_interactive_battery_behavior(all_results, days=10):
     # Given the constraint of pure Plotly, the most reliable way to have 3 buttons
     # is to have them filter by that specific dimension, showing all results that match.
     
-    def get_visibility_filter(dim, value):
+    def get_visibility_filter(dim_key, value):
         vis = [False] * len(fig.data)
         for idx in common_trace_indices:
             vis[idx] = True
         for group in trace_groups:
-            if group[dim] == value:
+            if group[dim_key] == value:
                 for idx in group['indices']:
                     vis[idx] = True
         return vis
 
-    # Capacity dropdown
-    cap_buttons = []
-    for cap in capacities:
-        cap_buttons.append(dict(
-            method="update",
-            label=f"Cap: {cap}",
-            args=[{"visible": get_visibility_filter('capacity', cap)},
-                  {"title": f"Battery Behavior (Filtered by Capacity: {cap})"}]
-        ))
-
-    # Rate dropdown
-    rate_buttons = []
-    for r in rates:
-        rate_buttons.append(dict(
-            method="update",
-            label=f"Rate: {r}",
-            args=[{"visible": get_visibility_filter('rate', r)},
-                  {"title": f"Battery Behavior (Filtered by Rate: {r})"}]
-        ))
-
-    # Strategy dropdown
-    strat_buttons = []
-    for s in strategies:
-        strat_buttons.append(dict(
-            method="update",
-            label=f"Strat: {s}",
-            args=[{"visible": get_visibility_filter('strategy_name', s)},
-                  {"title": f"Battery Behavior (Filtered by Strategy: {s})"}]
+    # Generate buttons and updatemenus dynamically
+    updatemenus = []
+    x_positions = [0.35, 0.5, 0.65]
+    
+    for i, (quantity_to_filter, values) in enumerate(dropdown_quantities.items()):
+        buttons = []
+        for val in values:
+            buttons.append(dict(
+                method="update",
+                label=f"{quantity_to_filter}: {val} {quantity_to_filter.unit}",
+                args=[{"visible": get_visibility_filter(quantity_to_filter, val)},
+                      {"title": f"Battery Behavior vzxcvzxcvxcv (Filtered by {quantity_to_filter}: {val})"}]
+            ))
+        
+        updatemenus.append(dict(
+            buttons=buttons,
+            direction="down",
+            showactive=True,
+            x=x_positions[i], xanchor="center",
+            y=1.15, yanchor="top",
+            font=dict(size=14)
         ))
 
     fig.update_layout(
-        updatemenus=[
-            dict(
-                buttons=cap_buttons,
-                direction="down",
-                showactive=True,
-                x=0.35, xanchor="center",
-                y=1.15, yanchor="top",
-                font=dict(size=14)
-            ),
-            dict(
-                buttons=rate_buttons,
-                direction="down",
-                showactive=True,
-                x=0.5, xanchor="center",
-                y=1.15, yanchor="top",
-                font=dict(size=14)
-            ),
-            dict(
-                buttons=strat_buttons,
-                direction="down",
-                showactive=True,
-                x=0.65, xanchor="center",
-                y=1.15, yanchor="top",
-                font=dict(size=14)
-            )
-        ],
+        updatemenus=updatemenus,
         height=1000,
         template="plotly_white",
         hovermode='x unified',
@@ -295,6 +239,7 @@ def plot_interactive_battery_behavior(all_results, days=10):
         legend2=dict(orientation="h", yanchor="top", y=0.79, xanchor="right", x=1),
         legend3=dict(orientation="h", yanchor="top", y=0.41, xanchor="right", x=1),
         legend4=dict(orientation="h", yanchor="top", y=0.19, xanchor="right", x=1),
+        barmode='relative'
     )
 
     fig.update_yaxes(fixedrange=True)
@@ -308,8 +253,8 @@ def plot_interactive_battery_behavior(all_results, days=10):
 
 
 def plot_battery_savings_surface(results_df, strategy_name, rates, capacities):
-    pivot = results_df[results_df['strategy'] == strategy_name] \
-        .pivot(index='capacity_kwh', columns='rate_kw', values='annual_savings_eur') \
+    pivot = results_df[results_df[STRATEGY] == strategy_name] \
+        .pivot(index=CAPACITY, columns=CHARGING_RATE, values='annual_savings_eur') \
         .fillna(0)
 
     fig = go.Figure(data=[go.Surface(

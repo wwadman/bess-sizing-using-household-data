@@ -1,7 +1,7 @@
 import pandas as pd
 from itertools import product
 from tibber_insights.data_loader import load_monthly_files
-from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR
+from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR, CAPACITY, CHARGING_RATE, STRATEGY
 from tibber_insights.billing import forecast_2027_bill
 from tibber_insights.simulation import run_battery_simulation
 from tibber_insights.strategies import strategy_daily_lp
@@ -54,15 +54,15 @@ def main():
             if SANITY_CHECK:
                 behavior_plots_data.append({
                     'sim_df': sim_df,
-                    'capacity': capacity,
-                    'rate': rate,
-                    'strategy_name': strategy_name
+                    CAPACITY: capacity,
+                    CHARGING_RATE: rate,
+                    STRATEGY: strategy_name
                 })
 
             sim_results.append({
-                'strategy': strategy_name,
-                'capacity_kwh': capacity,
-                'rate_kw': rate,
+                STRATEGY: strategy_name,
+                CAPACITY: capacity,
+                CHARGING_RATE: rate,
                 'annual_savings_eur': savings,
                 'net_bill_eur': baseline_bill - savings,
                 'savings_pct': savings / baseline_bill * 100,
@@ -78,12 +78,12 @@ def main():
     print("╠" + "═" * 88 + "╣")
 
     display_df = results_df.sort_values(
-        ['strategy', 'annual_savings_eur'],
+        [STRATEGY, 'annual_savings_eur'],
         ascending=[True, False],
-    )[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
+    )[[STRATEGY, CAPACITY, CHARGING_RATE, 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
 
     # Rename columns for prettier display
-    display_df.columns = ['Strategy', f'Cap ({SOC.unit})', f'Rate ({NET_HOUSEHOLD.unit})', f'Savings ({EUR})', f'Net Bill ({EUR})', 'Savings %']
+    # display_df.columns = ['Strategy', f'Cap ({SOC.unit})', f'Rate ({NET_HOUSEHOLD.unit})', f'Savings ({EUR})', f'Net Bill ({EUR})', 'Savings %']
 
     sim_table = display_df.to_string(index=False, justify='center', formatters={
         f'Cap ({SOC.unit})': '{:.0f}'.format,
@@ -98,7 +98,7 @@ def main():
 
     if not results_df.empty:
         best_by_strategy = (
-            results_df.loc[results_df.groupby('strategy')['annual_savings_eur'].idxmax()]
+            results_df.loc[results_df.groupby(STRATEGY)['annual_savings_eur'].idxmax()]
             .sort_values('annual_savings_eur', ascending=False)
         )
 
@@ -106,7 +106,7 @@ def main():
         print(f"║ {'🏆 BEST CONFIGURATION PER STRATEGY':^86}║")
         print("╠" + "═" * 88 + "╣")
 
-        best_display = best_by_strategy[['strategy', 'capacity_kwh', 'rate_kw', 'annual_savings_eur', 'savings_pct', 'net_bill_eur']]
+        best_display = best_by_strategy[[STRATEGY, CAPACITY, CHARGING_RATE, 'annual_savings_eur', 'savings_pct', 'net_bill_eur']]
         best_display.columns = ['Strategy', f'Cap ({SOC.unit})', f'Rate ({NET_HOUSEHOLD.unit})', f'Savings ({EUR})', 'Savings %', f'Net Bill ({EUR})']
 
         best_table = best_display.to_string(index=False, justify='center', formatters={
