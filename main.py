@@ -5,7 +5,7 @@ from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR
 from tibber_insights.billing import forecast_2027_bill
 from tibber_insights.simulation import run_battery_simulation
 from tibber_insights.strategies import strategy_daily_lp
-from tibber_insights.visualization import plot_battery_savings_surface, plot_battery_behavior
+from tibber_insights.visualization import plot_battery_savings_surface, plot_interactive_battery_behavior
 
 
 PLOT = False
@@ -29,8 +29,8 @@ def main():
     # -- Battery simulation --------------------------------------------------------
     capacities = [5, 10, 20]
     rates = [0.8, 1.2, 2.4, 4]
-    # capacities = [20]
-    # rates = [4]
+    capacities = [5, 20]
+    rates = [4]
 
     baseline_bill = forecast['net_bill_2027_eur']
 
@@ -39,6 +39,7 @@ def main():
     }
 
     sim_results = []
+    behavior_plots_data = []
 
     for capacity, rate in product(capacities, rates):
         for strategy_name, strategy_fn in strategies.items():
@@ -51,7 +52,12 @@ def main():
             savings = sim_df.Savings.sum()
 
             if SANITY_CHECK:
-                plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=10)
+                behavior_plots_data.append({
+                    'sim_df': sim_df,
+                    'capacity': capacity,
+                    'rate': rate,
+                    'strategy_name': strategy_name
+                })
 
             sim_results.append({
                 'strategy': strategy_name,
@@ -61,6 +67,9 @@ def main():
                 'net_bill_eur': baseline_bill - savings,
                 'savings_pct': savings / baseline_bill * 100,
             })
+
+    if behavior_plots_data:
+        plot_interactive_battery_behavior(behavior_plots_data, days=10)
 
     results_df = pd.DataFrame(sim_results)
 

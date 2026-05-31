@@ -33,11 +33,9 @@ help with that.
 - 'net' means 'after potential taxes and fees' (not 'grid')
 
 ## Open issues
-- Also plot Net Household incl Battery to check if optimal strategy indeed fully exploits "own usage".
-- Speed up optimization
+- Check if optimal strategy indeed fully exploits "own usage".
 - Add configuration of a couple of existing batteries with good reviews
 
 ## Nice-to-haves
 - Add a stupidly simple use-your-own-energy strategy
 - Remove constraint that we cannot charge when discharging and vice versa
-- Should we also account for round trip efficiency in the (dis)charge rate constraints?
