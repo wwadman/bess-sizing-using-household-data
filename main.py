@@ -27,7 +27,7 @@ def main():
     forecast = forecast_2027_bill(df)
 
     # -- Battery simulation --------------------------------------------------------
-    capacities = [2, 5, 10, 20]
+    capacities = [5, 10, 20]
     rates = [0.8, 1.2, 2.4, 4]
     # capacities = [20]
     # rates = [4]
@@ -35,9 +35,6 @@ def main():
     baseline_bill = forecast['net_bill_2027_eur']
 
     strategies = {
-        # "arbitrage": strategy_arbitrage,
-        # "optimal_mpc": strategy_optimal_mpc,
-        # "optimal_mpc2": strategy_optimal_mpc2,
         "strategy_daily_lp": strategy_daily_lp,
     }
 
