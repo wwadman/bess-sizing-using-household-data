@@ -35,7 +35,6 @@ help with that.
 ## Open issues
 - Check if optimal strategy indeed fully exploits "own usage".
 - Add configuration of a couple of existing batteries with good reviews
-- yaxis and label disappeared..
 
 ## Nice-to-haves
 - Add a stupidly simple use-your-own-energy strategy

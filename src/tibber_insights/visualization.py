@@ -158,11 +158,8 @@ def plot_interactive_battery_behavior(all_results, days=10):
 
     trace_groups = [] # List of (capacity, rate, strategy, list_of_trace_indices)
     for res in all_results:
-        cap = res[CAPACITY]
-        r = res[CHARGING_RATE]
-        s = res[STRATEGY]
         df = res['sim_df']
-        
+
         group_indices = [
             add_interactive_trace(1, SOC, df[SOC], df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
             add_interactive_trace(2, NET_HOUSEHOLD_WITH_BATTERY, df[NET_HOUSEHOLD_WITH_BATTERY], df, visible=False, line=dict(color='black')),
@@ -175,9 +172,9 @@ def plot_interactive_battery_behavior(all_results, days=10):
         ]
         
         trace_groups.append({
-            CAPACITY: cap,
-            CHARGING_RATE: r,
-            STRATEGY: s,
+            CAPACITY: res[CAPACITY],
+            CHARGING_RATE: res[CHARGING_RATE],
+            STRATEGY: res[STRATEGY],
             'indices': group_indices
         })
 
