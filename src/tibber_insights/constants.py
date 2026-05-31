@@ -2,7 +2,7 @@ ENERGIEBELASTING = 0.09161  # €/kWh only when consuming
 INKOOPVERGOEDING = 0.0242  # €/kWh only when consuming
 VAT_RATE = 0.21  # 21% BTW
 
-# Round-trip efficiency EFFICIENCY_CHARGING * EFFICIENCY_DISCHARGING of about 0.81 is pretty conservative:
+# Round-trip efficiency EFFICIENCY_CHARGING * EFFICIENCY_DISCHARGING of about 0.9 * 0.9 = 0.81 is pretty conservative:
 EFFICIENCY_CHARGING = EFFICIENCY_DISCHARGING = 0.9
 
 # Units
