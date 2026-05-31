@@ -104,6 +104,10 @@ def strategy_linear_programming(row, future_df, current_soc, capacity_kwh, max_r
     ch_g = [pulp.LpVariable(f"ch_g_{t}", lowBound=0) for t in range(T)]
     dis_h = [pulp.LpVariable(f"dis_h_{t}", lowBound=0) for t in range(T)]
     dis_g = [pulp.LpVariable(f"dis_g_{t}", lowBound=0) for t in range(T)]
+    # Aggregate variables for total (dis)charge
+    ch = [ch_h[t] + ch_g[t] for t in range(T)]
+    dis = [dis_h[t] + dis_g[t] for t in range(T)]
+
     # Binary variables to prevent simultaneous charging and discharging
     is_charging = [pulp.LpVariable(f"is_charging_{t}", cat=pulp.LpBinary) for t in range(T)]
     
@@ -125,20 +129,20 @@ def strategy_linear_programming(row, future_df, current_soc, capacity_kwh, max_r
         # State of Charge Dynamics
         prev_soc = current_soc if t == 0 else soc[t-1]
         prob += (soc[t] == prev_soc
-                 + (ch_h[t] + ch_g[t]) * EFFICIENCY_CHARGING
-                 - (dis_h[t] + dis_g[t]) / EFFICIENCY_DISCHARGING)
+                 + ch[t] * EFFICIENCY_CHARGING
+                 - dis[t] / EFFICIENCY_DISCHARGING)
         
         # Rate of (dis)charge constraints with binary switch
-        prob += ch_h[t] + ch_g[t] <= max_rate_kw * is_charging[t]
-        prob += dis_h[t] + dis_g[t] <= max_rate_kw * (1 - is_charging[t])
+        prob += ch[t] <= max_rate_kw * is_charging[t]
+        prob += dis[t] <= max_rate_kw * (1 - is_charging[t])
         
         # Household Flow Boundaries
         prob += ch_h[t] <= e_prod[t]
         prob += dis_h[t] <= e_cons[t]
 
         # SOC limits
-        prob += (ch_h[t] + ch_g[t]) * EFFICIENCY_CHARGING <= capacity_kwh - prev_soc
-        prob += (dis_h[t] + dis_g[t]) / EFFICIENCY_DISCHARGING <= prev_soc
+        prob += ch[t] * EFFICIENCY_CHARGING <= capacity_kwh - prev_soc
+        prob += dis[t] / EFFICIENCY_DISCHARGING <= prev_soc
         
     # 6. Solve the problem
     # PULP_CBC_CMD is the default solver. We suppress output for speed.
@@ -186,18 +190,22 @@ def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
     ch_g = [pulp.LpVariable(f"ch_g_{t}", lowBound=0) for t in range(T)]
     dis_h = [pulp.LpVariable(f"dis_h_{t}", lowBound=0) for t in range(T)]
     dis_g = [pulp.LpVariable(f"dis_g_{t}", lowBound=0) for t in range(T)]
+
+    # Aggregate variables for total (dis)charge
+    ch = [ch_h[t] + ch_g[t] for t in range(T)]
+    dis = [dis_h[t] + dis_g[t] for t in range(T)]
+
     # Binary variables to prevent simultaneous charging and discharging
     # is_charging = [pulp.LpVariable(f"is_charging_{t}", cat=pulp.LpBinary) for t in range(T)]
 
     soc = [pulp.LpVariable(f"soc_{t}", lowBound=0, upBound=capacity_kwh) for t in range(T)]
 
     # 4. Objective Function
-    # Maximize: sum(dis_h*p_buy + dis_g*p_sell - ch_h*p_sell - ch_g*p_buy)
     benefit_terms = [
-        dis_h[t] * p_buy[t]
+          dis_h[t] * p_buy[t]
         + dis_g[t] * p_sell[t]
-        - ch_h[t] * p_sell[t]
-        - ch_g[t] * p_buy[t]
+        -  ch_h[t] * p_sell[t]
+        -  ch_g[t] * p_buy[t]
         for t in range(T)
     ]
     prob += pulp.lpSum(benefit_terms)
@@ -207,20 +215,20 @@ def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
         # State of Charge Dynamics
         prev_soc = current_soc if t == 0 else soc[t-1]
         prob += (soc[t] == prev_soc
-                 + (ch_h[t] + ch_g[t]) * EFFICIENCY_CHARGING
-                 - (dis_h[t] + dis_g[t]) / EFFICIENCY_DISCHARGING)
+                 + ch[t] * EFFICIENCY_CHARGING
+                 - dis[t] / EFFICIENCY_DISCHARGING)
 
         # Rate of (dis)charge constraints with binary switch
-        prob += ch_h[t] + ch_g[t] <= max_rate_kw # * is_charging[t]
-        prob += dis_h[t] + dis_g[t] <= max_rate_kw # * (1 - is_charging[t])
+        prob += ch[t] * EFFICIENCY_CHARGING <= max_rate_kw # * is_charging[t]
+        prob += dis[t] / EFFICIENCY_DISCHARGING <= max_rate_kw # * (1 - is_charging[t])
 
         # Household Flow Boundaries
         prob += ch_h[t] <= e_prod[t]
         prob += dis_h[t] <= e_cons[t]
 
         # SOC limits
-        prob += (ch_h[t] + ch_g[t]) * EFFICIENCY_CHARGING <= capacity_kwh - prev_soc
-        prob += (dis_h[t] + dis_g[t]) / EFFICIENCY_DISCHARGING <= prev_soc
+        prob += ch[t] * EFFICIENCY_CHARGING <= capacity_kwh - prev_soc
+        prob += dis[t] / EFFICIENCY_DISCHARGING <= prev_soc
 
     # 6. Solve the problem
     # PULP_CBC_CMD is the default solver. We suppress output for speed.

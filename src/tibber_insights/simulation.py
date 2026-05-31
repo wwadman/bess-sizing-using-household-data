@@ -1,19 +1,17 @@
-import numpy as np
 import pandas as pd
 from .constants import (
-    NET_HOUSEHOLD, CHARGE, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
-    DISCHARGE, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
+    NET_HOUSEHOLD, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
+    DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, COST_WO_BATTERY, COST_WITH_BATTERY, NET_BUY_PRICE, NET_SELL_PRICE, TIME,
-    CUMULATIVE_SAVINGS, SAVINGS, SAVINGS_PER_DAY, NET_HOUSEHOLD_WITH_BATTERY, EFFICIENCY_CHARGING,
-    EFFICIENCY_DISCHARGING
+    SAVINGS, SAVINGS_PER_DAY, NET_HOUSEHOLD_WITH_BATTERY, EFFICIENCY_CHARGING,
+    EFFICIENCY_DISCHARGING, CONSUMPTION, PRODUCTION
 )
 
 def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
     sim_df = sim_df.copy()  # To avoid adding columns to the original DataFrame, for every strategy, rate and capacity
 
     current_soc = capacity_kwh/2  # Just to enable sanity-checking/debugging during the first TIME steps of the simulation
-    total_savings = 0.0
-    
+
     simulation_logs = []
 
     # Find all indices where the hour is 14:00
@@ -57,39 +55,34 @@ def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
             soc_charge_bump = charge * EFFICIENCY_CHARGING
             discharge = dis_h + dis_g
             soc_discharge_dip = discharge / EFFICIENCY_DISCHARGING
-            
+
             # 1. Total (dis)charge cannot exceed the max rate
-            assert 0 <= charge <= max_rate_kw + 1e-6, f"Total charge {charge} should be between 0 and max rate {max_rate_kw}"
-            assert 0 <= discharge <= max_rate_kw + 1e-6, f"Total discharge {discharge} should be between 0 and max rate {max_rate_kw}"
+            eps = 1e-4  # some margin to counter numerical errors
+            assert -eps <= soc_charge_bump <= max_rate_kw + eps, \
+                f"Total charge {soc_charge_bump} should be between 0 and max rate {max_rate_kw}"
+            assert -eps <= soc_discharge_dip <= max_rate_kw + eps, \
+                f"Total discharge {soc_discharge_dip} should be between 0 and max rate {max_rate_kw}"
 
             # Update SOC for next time step and check if SOC is within limits
             current_soc = current_soc + soc_charge_bump - soc_discharge_dip
-            eps = 1e-4
             assert -eps <= current_soc <= capacity_kwh + eps, \
                 f"Current SOC {current_soc} should be within [0, {capacity_kwh}]."
 
-            # Cost without battery: net buy * buy_price (if positive) or net sell * sell_price (if negative)
-            price_this_hour = row_now[NET_BUY_PRICE] if row_now[NET_HOUSEHOLD] > 0 else row_now[NET_SELL_PRICE]
-            cost_no_batt = row_now[NET_HOUSEHOLD] * price_this_hour
+            cost_wo_batt = row_now[CONSUMPTION] * row_now[NET_BUY_PRICE] - row_now[PRODUCTION] * row_now[NET_SELL_PRICE]
 
-            # Cost with battery: (net_kwh + charge - discharge) * relevant_price
             new_net_kwh = row_now[NET_HOUSEHOLD] + charge - discharge
-            price_this_hour = row_now[NET_BUY_PRICE] if new_net_kwh > 0 else row_now[NET_SELL_PRICE]
-            cost_with_batt = new_net_kwh * price_this_hour
-
-            total_savings += cost_no_batt - cost_with_batt
+            battery_savings = (dis_h - ch_g) * row_now[NET_BUY_PRICE] + (dis_g - ch_h) * row_now[NET_SELL_PRICE]
+            cost_with_batt = cost_wo_batt - battery_savings
 
             simulation_logs.append({
                 TIME: row_now[TIME],
                 SOC: current_soc,
-                CHARGE: charge,
                 CHARGE_FROM_HOUSE: ch_h,
                 CHARGE_FROM_GRID: ch_g,
-                DISCHARGE: discharge,
                 DISCHARGE_TO_HOUSE: dis_h,
                 DISCHARGE_TO_GRID: dis_g,
                 NET_HOUSEHOLD_WITH_BATTERY: new_net_kwh,
-                COST_WO_BATTERY: cost_no_batt,
+                COST_WO_BATTERY: cost_wo_batt,
                 COST_WITH_BATTERY: cost_with_batt
             })
 
@@ -97,9 +90,8 @@ def run_battery_simulation(sim_df, capacity_kwh, max_rate_kw, strategy_fn):
     df_logs = df_logs.drop_duplicates(subset=[TIME], keep='first') # If 24h blocks overlap (they shouldn't if we step correctly, but just in case)
     df_logs[SAVINGS] = df_logs[COST_WO_BATTERY] - df_logs[COST_WITH_BATTERY]
     df_logs[SAVINGS_PER_DAY] = df_logs.groupby(df_logs[TIME].dt.date)[SAVINGS].transform('sum')
-    df_logs[CUMULATIVE_SAVINGS] = np.cumsum(df_logs[SAVINGS])
     sim_df = sim_df.merge(df_logs, on=TIME, how="left", suffixes=("", "_logged"))
-    return total_savings, sim_df
+    return sim_df
 
 
 def get_now_and_known_future(i, sim_df):

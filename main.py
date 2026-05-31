@@ -27,10 +27,10 @@ def main():
     forecast = forecast_2027_bill(df)
 
     # -- Battery simulation --------------------------------------------------------
-    capacities = [0, 2, 5, 10, 20]   # [2, 5, 10, 20]
-    rates = [0.8, 1.2, 2.4, 4]       #
-    capacities = [20]   # [2, 5, 10, 20]
-    rates = [4]       #
+    capacities = [2, 5, 10, 20]
+    rates = [0.8, 1.2, 2.4, 4]
+    # capacities = [20]
+    # rates = [4]
 
     baseline_bill = forecast['net_bill_2027_eur']
 
@@ -45,12 +45,13 @@ def main():
 
     for capacity, rate in product(capacities, rates):
         for strategy_name, strategy_fn in strategies.items():
-            savings, sim_df = run_battery_simulation(
+            sim_df = run_battery_simulation(
                 sim_df=df,
                 capacity_kwh=capacity,
                 max_rate_kw=rate,
                 strategy_fn=strategy_fn,
             )
+            savings = sim_df.Savings.sum()
 
             if SANITY_CHECK:
                 plot_battery_behavior(sim_df, capacity, rate, strategy_name, days=10)
