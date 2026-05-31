@@ -4,7 +4,7 @@ from tibber_insights.data_loader import load_monthly_files
 from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR
 from tibber_insights.billing import forecast_2027_bill
 from tibber_insights.simulation import run_battery_simulation
-from tibber_insights.strategies import strategy_linear_programming
+from tibber_insights.strategies import strategy_daily_lp
 from tibber_insights.visualization import plot_battery_savings_surface, plot_battery_behavior
 
 
@@ -38,7 +38,7 @@ def main():
         # "arbitrage": strategy_arbitrage,
         # "optimal_mpc": strategy_optimal_mpc,
         # "optimal_mpc2": strategy_optimal_mpc2,
-        "linear_programming": strategy_linear_programming,
+        "strategy_daily_lp": strategy_daily_lp,
     }
 
     sim_results = []
