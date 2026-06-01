@@ -3,8 +3,7 @@ from .constants import (
     NET_HOUSEHOLD, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
     DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, COST_WO_BATTERY, COST_WITH_BATTERY, NET_BUY_PRICE, NET_SELL_PRICE, TIME,
-    SAVINGS, SAVINGS_PER_DAY, NET_HOUSEHOLD_WITH_BATTERY, EFFICIENCY_CHARGING,
-    EFFICIENCY_DISCHARGING, CONSUMPTION, PRODUCTION
+    SAVINGS, SAVINGS_PER_DAY, NET_HOUSEHOLD_WITH_BATTERY, CONSUMPTION, PRODUCTION
 )
 
 def run_battery_simulation(sim_df, battery, strategy_fn):
@@ -43,9 +42,9 @@ def run_battery_simulation(sim_df, battery, strategy_fn):
 
             # Check all physical limits and battery constraints
             charge = ch_h + ch_g
-            soc_charge_bump = charge * EFFICIENCY_CHARGING
+            soc_charge_bump = charge * battery.efficiency_charging
             discharge = dis_h + dis_g
-            soc_discharge_dip = discharge / EFFICIENCY_DISCHARGING
+            soc_discharge_dip = discharge / battery.efficiency_discharging
 
             # 1. Total (dis)charge cannot exceed the max rate
             eps = 1e-4  # some margin to counter numerical errors

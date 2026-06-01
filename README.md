@@ -33,12 +33,10 @@ help with that.
 - 'net' means 'after potential taxes and fees' (not 'grid')
 
 ## Open issues
-- Check if optimal strategy indeed fully exploits "own usage".
-- Make efficiency part of the battery config
-- simplify drop down code (invert 2 for loops?)
-
+- Check if the optimal strategy indeed fully exploits "own usage".
+- Add battery price in cost comparison
 ## Nice-to-haves
 - Add a stupidly simple use-your-own-energy strategy
 - Remove constraint that we cannot charge when discharging and vice versa
 - Plot "Savings per day" more intuitively/correctly
-- What about Megabatteries? $$
+- What about Mega batteries? $$

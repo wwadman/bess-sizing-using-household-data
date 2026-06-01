@@ -1,4 +1,5 @@
-from tibber_insights.constants import CAPACITY, CHARGING_RATE, RTE, BATTERY_PROPERTIES
+from tibber_insights.constants import BATTERY_PROPERTIES
+import numpy as np
 
 
 class Battery:
@@ -6,8 +7,11 @@ class Battery:
         self.name = name
         self.capacity = capacity
         self.charging_rate = charging_rate
-        self.rte = rte
+        self.rte = rte  # Round-trip efficiency
         self.price = price
+
+        # rte = efficiency_charging * efficiency_discharging, and we assume both are equal:
+        self.efficiency_charging = self.efficiency_discharging = np.sqrt(self.rte)
         self.properties = [self.capacity, self.charging_rate, self.rte, self.price]
 
     def properties_to_long_string(self):

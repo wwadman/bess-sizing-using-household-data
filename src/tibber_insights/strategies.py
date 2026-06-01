@@ -1,6 +1,5 @@
 import pulp
 from .constants import (NET_BUY_PRICE, NET_SELL_PRICE, EXPECTED_CONSUMPTION, EXPECTED_PRODUCTION,
-                        EFFICIENCY_DISCHARGING, EFFICIENCY_CHARGING,
                         CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID)
 
 
@@ -57,20 +56,20 @@ def strategy_daily_lp(future_df, current_soc, battery):
         # State of Charge Dynamics
         prev_soc = current_soc if t == 0 else soc[t-1]
         prob += (soc[t] == prev_soc
-                 + ch[t] * EFFICIENCY_CHARGING
-                 - dis[t] / EFFICIENCY_DISCHARGING)
+                 + ch[t] * battery.efficiency_charging
+                 - dis[t] / battery.efficiency_discharging)
 
         # Rate of (dis)charge constraints with binary switch
-        prob += ch[t] * EFFICIENCY_CHARGING <= battery.charging_rate * is_charging[t]
-        prob += dis[t] / EFFICIENCY_DISCHARGING <= battery.charging_rate * (1 - is_charging[t])
+        prob += ch[t] * battery.efficiency_charging <= battery.charging_rate * is_charging[t]
+        prob += dis[t] / battery.efficiency_discharging <= battery.charging_rate * (1 - is_charging[t])
 
         # Household Flow Boundaries
         prob += ch_h[t] <= e_prod[t]
         prob += dis_h[t] <= e_cons[t]
 
         # SOC limits
-        prob += ch[t] * EFFICIENCY_CHARGING <= battery.capacity - prev_soc
-        prob += dis[t] / EFFICIENCY_DISCHARGING <= prev_soc
+        prob += ch[t] * battery.efficiency_charging <= battery.capacity - prev_soc
+        prob += dis[t] / battery.efficiency_discharging <= prev_soc
 
     # 6. Solve the problem
     # PULP_CBC_CMD is the default solver. We suppress output for speed.
