@@ -34,8 +34,8 @@ help with that.
 
 ## Open issues
 - Check if optimal strategy indeed fully exploits "own usage".
-- Add configuration of a couple of existing batteries with good reviews
 - Make efficiency part of the battery config
+- simplify drop down code (invert 2 for loops?)
 
 ## Nice-to-haves
 - Add a stupidly simple use-your-own-energy strategy
