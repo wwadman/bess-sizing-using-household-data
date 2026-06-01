@@ -3,7 +3,8 @@ from .constants import (
     NET_HOUSEHOLD, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
     DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, COST_WO_BATTERY, COST_WITH_BATTERY, NET_BUY_PRICE, NET_SELL_PRICE, TIME,
-    SAVINGS, SAVINGS_PER_DAY, NET_HOUSEHOLD_WITH_BATTERY, CONSUMPTION, PRODUCTION
+    SAVINGS, CUMULATIVE_SAVINGS_DAILY, DAILY_SAVINGS_TOTAL,
+    NET_HOUSEHOLD_WITH_BATTERY, CONSUMPTION, PRODUCTION
 )
 
 def run_battery_simulation(sim_df, battery, strategy_fn):
@@ -79,6 +80,14 @@ def run_battery_simulation(sim_df, battery, strategy_fn):
     df_logs = pd.DataFrame(simulation_logs)
     df_logs = df_logs.drop_duplicates(subset=[TIME], keep='first') # If 24h blocks overlap (they shouldn't if we step correctly, but just in case)
     df_logs[SAVINGS] = df_logs[COST_WO_BATTERY] - df_logs[COST_WITH_BATTERY]
-    df_logs[SAVINGS_PER_DAY] = df_logs.groupby(df_logs[TIME].dt.date)[SAVINGS].transform('sum')
+
+    # Calculate cumulative savings per day
+    df_logs[CUMULATIVE_SAVINGS_DAILY] = df_logs.groupby(df_logs[TIME].dt.date)[SAVINGS].cumsum()
+
+    # Split cumulative savings into hourly growth (0-22h) and daily total (23h)
+    is_hour_23 = df_logs[TIME].dt.hour == 23
+    df_logs[DAILY_SAVINGS_TOTAL] = df_logs[CUMULATIVE_SAVINGS_DAILY].where(is_hour_23)
+    df_logs[CUMULATIVE_SAVINGS_DAILY] = df_logs[CUMULATIVE_SAVINGS_DAILY].where(~is_hour_23)
+
     sim_df = sim_df.merge(df_logs, on=TIME, how="left", suffixes=("", "_logged"))
     return sim_df

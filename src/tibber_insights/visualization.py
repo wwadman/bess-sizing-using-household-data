@@ -4,7 +4,7 @@ from plotly.subplots import make_subplots
 from .constants import (
     NET_HOUSEHOLD, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BATTERY, COST_WITH_BATTERY,
-    EUR, KW, KWH, TIME, SAVINGS_PER_DAY,
+    EUR, KW, KWH, TIME, CUMULATIVE_SAVINGS_DAILY, DAILY_SAVINGS_TOTAL,
     NET_HOUSEHOLD_WITH_BATTERY,
     CAPACITY, CHARGING_RATE, STRATEGY, BATTERY, DROPDOWN_QUANTITIES
 )
@@ -121,10 +121,10 @@ def _add_common_traces(fig, first_df):
         list[int]: The indices of the added common traces in `fig.data`.
     """
     indices = [
-        _add_interactive_trace(fig, 3, NET_BUY_PRICE, first_df, line=dict(color='orange')),
-        _add_interactive_trace(fig, 3, NET_SELL_PRICE, first_df, line=dict(color='blue')),
-        _add_interactive_trace(fig, 2, NET_HOUSEHOLD, first_df, line=dict(color='grey', dash='dash')),
-        _add_interactive_trace(fig, 4, COST_WO_BATTERY, first_df, line=dict(color='gray', dash='dash')),
+        _add_interactive_trace(fig, 3, NET_BUY_PRICE, first_df, line=dict(color='orange'), legendgroup='prices'),
+        _add_interactive_trace(fig, 3, NET_SELL_PRICE, first_df, line=dict(color='blue'), legendgroup='prices'),
+        _add_interactive_trace(fig, 2, NET_HOUSEHOLD, first_df, line=dict(color='grey', dash='dash'), legendgroup='net_household'),
+        _add_interactive_trace(fig, 4, COST_WO_BATTERY, first_df, line=dict(color='gray', dash='dash'), legendgroup='costs'),
     ]
     # Add horizontal lines (static)
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
@@ -152,13 +152,14 @@ def _add_result_traces(fig, battery_behavior):
         for strategy_name, df in strategies_dict.items():
             group_indices = [
                 _add_interactive_trace(fig, 1, SOC, df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
-                _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BATTERY, df, visible=False, line=dict(color='black')),
+                _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BATTERY, df, visible=False, line=dict(color='black'), legendgroup='net_household'),
                 _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
                 _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df, visible=False, trace_type=go.Bar, marker_color='lightgreen', legendgroup='charge'),
                 _add_interactive_trace(fig, 2, DISCHARGE_TO_HOUSE, df, swap=True, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
                 _add_interactive_trace(fig, 2, DISCHARGE_TO_GRID, df, swap=True, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
-                _add_interactive_trace(fig, 4, COST_WITH_BATTERY, df, visible=False, line=dict(color='indigo')),
-                _add_interactive_trace(fig, 4, SAVINGS_PER_DAY, df, visible=False, trace_type=go.Bar),
+                _add_interactive_trace(fig, 4, COST_WITH_BATTERY, df, visible=False, line=dict(color='indigo'), legendgroup='costs'),
+                _add_interactive_trace(fig, 4, CUMULATIVE_SAVINGS_DAILY, df, visible=False, trace_type=go.Bar, opacity=0.5, marker_color='#EF553B', legendgroup='savings'),
+                _add_interactive_trace(fig, 4, DAILY_SAVINGS_TOTAL, df, visible=False, trace_type=go.Bar, opacity=1.0, marker_color='#EF553B', legendgroup='savings'),
             ]
             group = {
                 'indices': group_indices,
