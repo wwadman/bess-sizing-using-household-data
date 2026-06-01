@@ -189,31 +189,33 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
         return vis
 
     update_menus = []
-    x_positions = [0.35, 0.65]
-    
+    x_positions = [0.35, 0.75]
     # Iterate through dropdown quantities in their defined order
-    # Extract unique values for dropdowns and map them to their constants
-    values_per_dropdown_quantity = {q: sorted(list(set(r[q] for r in all_results))) for q in DROPDOWN_QUANTITIES}
-    items = list(values_per_dropdown_quantity.items())
-    for i, (quantity_to_filter, values) in enumerate(items):
+    for i, quantity in enumerate(DROPDOWN_QUANTITIES):
         buttons = []
-        for val in values:
-            unit_str = f" {quantity_to_filter.unit}" if quantity_to_filter.unit else ""
-            label = f"{quantity_to_filter}: {val}{unit_str}"
-
-            # Special handling for Battery Model to include Capacity and Rate
-            if quantity_to_filter == BATTERY_MODEL:
-                # Find a result with this battery model to get its capacity and rate
-                res_match = next((r for r in all_results if r[BATTERY_MODEL] == val), None)
-                if res_match:
-                    cap = res_match[CAPACITY]
-                    rate = res_match[CHARGING_RATE]
-                    label = f"{quantity_to_filter}: {val} ({cap} {CAPACITY.unit}, {rate} {CHARGING_RATE.unit})"
+        # Get unique values for this quantity and sort them
+        unique_values = sorted(list(set(res[quantity] for res in all_results)))
+        
+        for val in unique_values:
+            # Create a descriptive label for the button
+            if quantity == BATTERY_MODEL:
+                # Find any result with this model to extract its capacity and rate
+                res_match = next(r for r in all_results if r[BATTERY_MODEL] == val)
+                cap, rate = res_match[CAPACITY], res_match[CHARGING_RATE]
+                # Padding to align technical specs to the right
+                total_width = 75
+                model_label = f"{BATTERY_MODEL}: {val}"
+                specs_label = f"({cap} {CAPACITY.unit}, {rate} {CHARGING_RATE.unit})"
+                padding = " " * (total_width - len(model_label) - len(specs_label))
+                label = f"{model_label}{padding}{specs_label}"
+            else:
+                unit_str = f" {quantity.unit}" if quantity.unit else ""
+                label = f"{quantity}: {val}{unit_str}"
 
             buttons.append(dict(
                 method="update",
                 label=label,
-                args=[{"visible": get_visibility_filter(quantity_to_filter, val)},
+                args=[{"visible": get_visibility_filter(quantity, val)},
                       {"title": f"Battery Behavior (Filtered by {label})"}]
             ))
         update_menus.append(dict(
@@ -222,7 +224,7 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
             showactive=True,
             x=x_positions[i], xanchor="center",
             y=1.15, yanchor="top",
-            font=dict(size=14)
+            font=dict(size=14, family="Courier New, monospace")
         ))
 
     fig.update_layout(
