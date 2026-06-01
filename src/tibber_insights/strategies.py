@@ -1,11 +1,10 @@
 import pulp
-from .constants import (NET_BUY_PRICE, NET_SELL_PRICE, PRODUCTION, CONSUMPTION_UNIT_PRICE_EUR, EXPECTED_CONSUMPTION,
-                        EXPECTED_PRODUCTION, TIME, NET_VALUE, EXPECTED_MAX_CONSUMPTION,
+from .constants import (NET_BUY_PRICE, NET_SELL_PRICE, EXPECTED_CONSUMPTION, EXPECTED_PRODUCTION,
                         EFFICIENCY_DISCHARGING, EFFICIENCY_CHARGING,
                         CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID)
 
 
-def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
+def strategy_daily_lp(future_df, current_soc, battery):
     """
     Optimizes battery behavior using Linear Programming (LP).
 
@@ -15,7 +14,7 @@ def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
     - dis_h: Discharge to House -> Value: p_buy (avoided cost)
     - dis_g: Discharge to Grid -> Value: p_sell (revenue)
     """
-    T = len(future_df)
+    horizon = len(future_df)
 
     # 1. Initialize the LP Problem
     # We use a maximization objective to maximize 'savings' or 'net benefit'
@@ -29,19 +28,19 @@ def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
 
     # 3. Decision Variables
     # All are continuous and non-negative
-    ch_h = [pulp.LpVariable(f"ch_h_{t}", lowBound=0) for t in range(T)]
-    ch_g = [pulp.LpVariable(f"ch_g_{t}", lowBound=0) for t in range(T)]
-    dis_h = [pulp.LpVariable(f"dis_h_{t}", lowBound=0) for t in range(T)]
-    dis_g = [pulp.LpVariable(f"dis_g_{t}", lowBound=0) for t in range(T)]
+    ch_h = [pulp.LpVariable(f"ch_h_{t}", lowBound=0) for t in range(horizon)]
+    ch_g = [pulp.LpVariable(f"ch_g_{t}", lowBound=0) for t in range(horizon)]
+    dis_h = [pulp.LpVariable(f"dis_h_{t}", lowBound=0) for t in range(horizon)]
+    dis_g = [pulp.LpVariable(f"dis_g_{t}", lowBound=0) for t in range(horizon)]
 
     # Aggregate variables for total (dis)charge
-    ch = [ch_h[t] + ch_g[t] for t in range(T)]
-    dis = [dis_h[t] + dis_g[t] for t in range(T)]
+    ch = [ch_h[t] + ch_g[t] for t in range(horizon)]
+    dis = [dis_h[t] + dis_g[t] for t in range(horizon)]
 
     # Binary variables to prevent simultaneous charging and discharging
-    is_charging = [pulp.LpVariable(f"is_charging_{t}", cat=pulp.LpBinary) for t in range(T)]
+    is_charging = [pulp.LpVariable(f"is_charging_{t}", cat=pulp.LpBinary) for t in range(horizon)]
 
-    soc = [pulp.LpVariable(f"soc_{t}", lowBound=0, upBound=capacity_kwh) for t in range(T)]
+    soc = [pulp.LpVariable(f"soc_{t}", lowBound=0, upBound=battery.capacity) for t in range(horizon)]
 
     # 4. Objective Function
     benefit_terms = [
@@ -49,12 +48,12 @@ def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
         + dis_g[t] * p_sell[t]
         -  ch_h[t] * p_sell[t]
         -  ch_g[t] * p_buy[t]
-        for t in range(T)
+        for t in range(horizon)
     ]
     prob += pulp.lpSum(benefit_terms)
 
     # 5. Constraints
-    for t in range(T):
+    for t in range(horizon):
         # State of Charge Dynamics
         prev_soc = current_soc if t == 0 else soc[t-1]
         prob += (soc[t] == prev_soc
@@ -62,15 +61,15 @@ def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
                  - dis[t] / EFFICIENCY_DISCHARGING)
 
         # Rate of (dis)charge constraints with binary switch
-        prob += ch[t] * EFFICIENCY_CHARGING <= max_rate_kw * is_charging[t]
-        prob += dis[t] / EFFICIENCY_DISCHARGING <= max_rate_kw * (1 - is_charging[t])
+        prob += ch[t] * EFFICIENCY_CHARGING <= battery.rate * is_charging[t]
+        prob += dis[t] / EFFICIENCY_DISCHARGING <= battery.rate * (1 - is_charging[t])
 
         # Household Flow Boundaries
         prob += ch_h[t] <= e_prod[t]
         prob += dis_h[t] <= e_cons[t]
 
         # SOC limits
-        prob += ch[t] * EFFICIENCY_CHARGING <= capacity_kwh - prev_soc
+        prob += ch[t] * EFFICIENCY_CHARGING <= battery.capacity - prev_soc
         prob += dis[t] / EFFICIENCY_DISCHARGING <= prev_soc
 
     # 6. Solve the problem
@@ -79,9 +78,9 @@ def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
 
     # 7. Add planned actions as columns to future_df
     future_df = future_df.copy()
-    future_df[CHARGE_FROM_HOUSE] = [float(pulp.value(ch_h[t])) for t in range(T)]
-    future_df[CHARGE_FROM_GRID] = [float(pulp.value(ch_g[t])) for t in range(T)]
-    future_df[DISCHARGE_TO_HOUSE] = [float(pulp.value(dis_h[t])) for t in range(T)]
-    future_df[DISCHARGE_TO_GRID] = [float(pulp.value(dis_g[t])) for t in range(T)]
+    future_df[CHARGE_FROM_HOUSE] = [float(pulp.value(ch_h[t])) for t in range(horizon)]
+    future_df[CHARGE_FROM_GRID] = [float(pulp.value(ch_g[t])) for t in range(horizon)]
+    future_df[DISCHARGE_TO_HOUSE] = [float(pulp.value(dis_h[t])) for t in range(horizon)]
+    future_df[DISCHARGE_TO_GRID] = [float(pulp.value(dis_g[t])) for t in range(horizon)]
 
     return future_df

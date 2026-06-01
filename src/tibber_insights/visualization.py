@@ -155,12 +155,10 @@ def _add_result_traces(fig, all_results):
             _add_interactive_trace(fig, 4, SAVINGS_PER_DAY, df, visible=False, trace_type=go.Bar),
         ]
         group = {
-            'indices': group_indices
+            'indices': group_indices,
+            'battery': res['battery'],
+            STRATEGY: res[STRATEGY]
         }
-        # Add all metadata from results to group for filtering
-        for q in DROPDOWN_QUANTITIES:
-            if q in res:
-                group[q] = res[q]
         trace_groups.append(group)
     return trace_groups
 
@@ -183,49 +181,71 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
         for idx in common_trace_indices:
             vis[idx] = True
         for group in trace_groups:
-            if group[dim_key] == value:
+            if dim_key == BATTERY_MODEL:
+                if group['battery'].name == value:
+                    for idx in group['indices']:
+                        vis[idx] = True
+            elif group[dim_key] == value:
                 for idx in group['indices']:
                     vis[idx] = True
         return vis
 
     update_menus = []
     x_positions = [0.35, 0.75]
-    # Iterate through dropdown quantities in their defined order
-    for i, quantity in enumerate(DROPDOWN_QUANTITIES):
-        buttons = []
-        # Get unique values for this quantity and sort them
-        unique_values = sorted(list(set(res[quantity] for res in all_results)))
-        
-        for val in unique_values:
-            # Create a descriptive label for the button
-            if quantity == BATTERY_MODEL:
-                # Find any result with this model to extract its capacity and rate
-                res_match = next(r for r in all_results if r[BATTERY_MODEL] == val)
-                cap, rate = res_match[CAPACITY], res_match[CHARGING_RATE]
-                # Padding to align technical specs to the right
-                total_width = 75
-                model_label = f"{BATTERY_MODEL}: {val}"
-                specs_label = f"({cap} {CAPACITY.unit}, {rate} {CHARGING_RATE.unit})"
-                padding = " " * (total_width - len(model_label) - len(specs_label))
-                label = f"{model_label}{padding}{specs_label}"
-            else:
-                unit_str = f" {quantity.unit}" if quantity.unit else ""
-                label = f"{quantity}: {val}{unit_str}"
+    total_width = 75
 
-            buttons.append(dict(
-                method="update",
-                label=label,
-                args=[{"visible": get_visibility_filter(quantity, val)},
-                      {"title": f"Battery Behavior (Filtered by {label})"}]
-            ))
-        update_menus.append(dict(
-            buttons=buttons,
-            direction="down",
-            showactive=True,
-            x=x_positions[i], xanchor="center",
-            y=1.15, yanchor="top",
-            font=dict(size=14, family="Courier New, monospace")
+    # --- Battery Model Dropdown (Left) ---
+    battery_buttons = []
+    for res in all_results:
+        battery = res['battery']
+        # Padding to align technical specs to the right
+        model_label = f"{BATTERY_MODEL}: {battery.name}"
+        specs_label = f"({battery.capacity} {CAPACITY.unit}, {battery.rate} {CHARGING_RATE.unit})"
+        padding = " " * (total_width - len(model_label) - len(specs_label))
+        label = f"{BATTERY_MODEL}: {battery.name}{padding}{specs_label}"
+
+        battery_buttons.append(dict(
+            method="update",
+            label=label,
+            args=[{"visible": get_visibility_filter(BATTERY_MODEL, battery.name)},
+                  {"title": f"Battery Behavior (Filtered by {label})"}]
         ))
+
+    update_menus.append(dict(
+        buttons=battery_buttons,
+        direction="down",
+        showactive=True,
+        x=x_positions[0], xanchor="center",
+        y=1.15, yanchor="top",
+        font=dict(size=14, family="Courier New, monospace")
+    ))
+
+    # --- Strategy Dropdown (Right) ---
+    strategy_buttons = []
+    # Similarly, get each unique strategy exactly once by filtering for one battery model
+    first_battery = all_results[0]['battery']
+    strategy_results = [res for res in all_results if res['battery'] == first_battery]
+
+    for res in strategy_results:
+        val = res[STRATEGY]
+        unit_str = f" {STRATEGY.unit}" if STRATEGY.unit else ""
+        label = f"{STRATEGY}: {val}{unit_str}"
+
+        strategy_buttons.append(dict(
+            method="update",
+            label=label,
+            args=[{"visible": get_visibility_filter(STRATEGY, val)},
+                  {"title": f"Battery Behavior (Filtered by {label})"}]
+        ))
+
+    update_menus.append(dict(
+        buttons=strategy_buttons,
+        direction="down",
+        showactive=True,
+        x=x_positions[1], xanchor="center",
+        y=1.15, yanchor="top",
+        font=dict(size=14, family="Courier New, monospace")
+    ))
 
     fig.update_layout(
         updatemenus=update_menus,
