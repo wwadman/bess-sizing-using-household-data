@@ -61,7 +61,7 @@ def _create_base_figure():
             "Net Buy/Sell Prices",
             "Cost Comparison"
         ),
-        row_heights=[0.1, 0.2, 0.1, 0.1],
+        row_heights=[0.1, 0.2, 0.2, 0.1],
     )
     return fig
 
@@ -99,6 +99,11 @@ def _add_interactive_trace(fig, subplot_row, quantity, current_df, swap=False, v
     )
     fig.add_trace(trace, row=subplot_row, col=1)
     fig.update_yaxes(title_text=quantity.unit, row=subplot_row, col=1)
+    
+    # Ensure price subplot (row 3) doesn't force zero to make price fluctuations more pronounced
+    if subplot_row == 3:
+        fig.update_yaxes(rangemode="normal", row=subplot_row, col=1)
+
     return len(fig.data) - 1
 
 
