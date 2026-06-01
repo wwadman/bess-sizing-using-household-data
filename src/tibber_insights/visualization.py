@@ -6,11 +6,11 @@ from .constants import (
     SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BATTERY, COST_WITH_BATTERY,
     EUR, KW, KWH, TIME, SAVINGS_PER_DAY,
     NET_HOUSEHOLD_WITH_BATTERY,
-    CAPACITY, CHARGING_RATE, STRATEGY, BATTERY_MODEL, DROPDOWN_QUANTITIES
+    CAPACITY, CHARGING_RATE, STRATEGY, BATTERY, DROPDOWN_QUANTITIES
 )
 
 
-def plot_interactive_battery_behavior(all_results, days=10):
+def plot_interactive_battery_behavior(battery_behavior, days=10):
     """
     Creates an interactive Plotly figure with 4 subplots showing battery behavior over time.
     
@@ -18,27 +18,27 @@ def plot_interactive_battery_behavior(all_results, days=10):
     results by Capacity, Charging Rate, and Strategy.
 
     Args:
-        all_results (list): A list of dictionaries, each containing:
-            - 'sim_df' (pd.DataFrame): Simulation results with TIME, SOC, power flows, etc.
-            - CAPACITY (Quantity): The battery capacity used in the simulation.
-            - CHARGING_RATE (Quantity): The charging rate used in the simulation.
-            - STRATEGY (str): The name of the optimization strategy used.
+        battery_behavior (dict): A dict with Battery instances as keys, and
+            values are dicts with strategy names as keys and sim_df as values.
         days (int, optional): The number of days to show by default (zoomed in).
             Defaults to 10.
     """
 
     # Create all stuff that does not change when toggling anything from the dropdowns
     fig = _create_base_figure()
-    first_df = all_results[0]['sim_df']  # to get the base layout and shared traces (like prices)
+    # To get the base layout and shared traces (like prices), just take the first sim_df
+    first_battery = list(battery_behavior.keys())[0]
+    first_strategy = list(battery_behavior[first_battery].keys())[0]
+    first_df = battery_behavior[first_battery][first_strategy]
     common_trace_indices = _add_common_traces(fig, first_df)
     for idx in common_trace_indices:
         fig.data[idx].visible = True  # Set initial visible
 
     # Create all stuff that does change when toggling anything from the dropdowns
-    trace_groups = _add_result_traces(fig, all_results)
+    trace_groups = _add_result_traces(fig, battery_behavior)
     for idx in trace_groups[0]['indices']:
         fig.data[idx].visible = True  # Show by default the first group from dropdown menu
-    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
+    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_behavior)
 
     _polish_layout(fig, first_df, days)
 
@@ -126,7 +126,7 @@ def _add_common_traces(fig, first_df):
     return indices
 
 
-def _add_result_traces(fig, all_results):
+def _add_result_traces(fig, battery_behavior):
     """
     Adds all simulation-specific traces to the figure, initially hidden.
 
@@ -135,35 +135,35 @@ def _add_result_traces(fig, all_results):
 
     Args:
         fig (plotly.graph_objects.Figure): The figure to add traces to.
-        all_results (list): The list of result dictionaries from the main simulation.
+        battery_behavior (dict): The nested dict of results.
 
     Returns:
         list[dict]: A list of trace groups, each containing metadata and the
             indices of its associated traces in `fig.data`.
     """
     trace_groups = []
-    for res in all_results:
-        df = res['sim_df']
-        group_indices = [
-            _add_interactive_trace(fig, 1, SOC, df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
-            _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BATTERY, df, visible=False, line=dict(color='black')),
-            _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
-            _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df, visible=False, trace_type=go.Bar, marker_color='lightgreen', legendgroup='charge'),
-            _add_interactive_trace(fig, 2, DISCHARGE_TO_HOUSE, df, swap=True, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
-            _add_interactive_trace(fig, 2, DISCHARGE_TO_GRID, df, swap=True, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
-            _add_interactive_trace(fig, 4, COST_WITH_BATTERY, df, visible=False, line=dict(color='indigo')),
-            _add_interactive_trace(fig, 4, SAVINGS_PER_DAY, df, visible=False, trace_type=go.Bar),
-        ]
-        group = {
-            'indices': group_indices,
-            'battery': res['battery'],
-            STRATEGY: res[STRATEGY]
-        }
-        trace_groups.append(group)
+    for battery, strategies_dict in battery_behavior.items():
+        for strategy_name, df in strategies_dict.items():
+            group_indices = [
+                _add_interactive_trace(fig, 1, SOC, df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
+                _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BATTERY, df, visible=False, line=dict(color='black')),
+                _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
+                _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df, visible=False, trace_type=go.Bar, marker_color='lightgreen', legendgroup='charge'),
+                _add_interactive_trace(fig, 2, DISCHARGE_TO_HOUSE, df, swap=True, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
+                _add_interactive_trace(fig, 2, DISCHARGE_TO_GRID, df, swap=True, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
+                _add_interactive_trace(fig, 4, COST_WITH_BATTERY, df, visible=False, line=dict(color='indigo')),
+                _add_interactive_trace(fig, 4, SAVINGS_PER_DAY, df, visible=False, trace_type=go.Bar),
+            ]
+            group = {
+                'indices': group_indices,
+                BATTERY: battery,
+                STRATEGY: strategy_name
+            }
+            trace_groups.append(group)
     return trace_groups
 
 
-def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results):
+def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_behavior):
     """
     Constructs the Plotly updatemenus for Capacity, Charging Rate, and Strategy.
 
@@ -171,7 +171,7 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
         fig (plotly.graph_objects.Figure): The figure to apply the menus to.
         common_trace_indices (list[int]): Indices of traces that should always be visible.
         trace_groups (list[dict]): Metadata and indices for each simulation configuration.
-        dropdown_quantities (dict): Mapping of Quantity constants to their sorted unique values.
+        battery_behavior (dict): The nested dict of results.
 
     Returns:
         list[dict]: A list of Plotly updatemenu configurations.
@@ -181,8 +181,8 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
         for idx in common_trace_indices:
             vis[idx] = True
         for group in trace_groups:
-            if dim_key == BATTERY_MODEL:
-                if group['battery'].name == value:
+            if dim_key == BATTERY:
+                if group[BATTERY].name == value:
                     for idx in group['indices']:
                         vis[idx] = True
             elif group[dim_key] == value:
@@ -192,23 +192,15 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
 
     update_menus = []
     x_positions = [0.35, 0.75]
-    total_width = 75
 
     # --- Battery Model Dropdown (Left) ---
     battery_buttons = []
-    for res in all_results:
-        battery = res['battery']
-        # Padding to align technical specs to the right
-        model_label = f"{BATTERY_MODEL}: {battery.name}"
-        specs_label = f"({battery.capacity} {CAPACITY.unit}, {battery.rate} {CHARGING_RATE.unit})"
-        padding = " " * (total_width - len(model_label) - len(specs_label))
-        label = f"{BATTERY_MODEL}: {battery.name}{padding}{specs_label}"
-
+    for battery in battery_behavior.keys():
         battery_buttons.append(dict(
             method="update",
-            label=label,
-            args=[{"visible": get_visibility_filter(BATTERY_MODEL, battery.name)},
-                  {"title": f"Battery Behavior (Filtered by {label})"}]
+            label=battery.__repr__(),
+            args=[{"visible": get_visibility_filter(BATTERY, battery.name)},
+                  {"title": f"Battery Behavior (Filtered by {battery})"}]
         ))
 
     update_menus.append(dict(
@@ -222,12 +214,12 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
 
     # --- Strategy Dropdown (Right) ---
     strategy_buttons = []
-    # Similarly, get each unique strategy exactly once by filtering for one battery model
-    first_battery = all_results[0]['battery']
-    strategy_results = [res for res in all_results if res['battery'] == first_battery]
-
-    for res in strategy_results:
-        val = res[STRATEGY]
+    # Get all unique strategy names
+    all_strategies = set()
+    for strategies_dict in battery_behavior.values():
+        all_strategies.update(strategies_dict.keys())
+    
+    for val in sorted(list(all_strategies)):
         unit_str = f" {STRATEGY.unit}" if STRATEGY.unit else ""
         label = f"{STRATEGY}: {val}{unit_str}"
 

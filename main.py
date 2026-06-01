@@ -1,6 +1,6 @@
 import pandas as pd
 from tibber_insights.data_loader import load_monthly_files
-from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR, CAPACITY, CHARGING_RATE, STRATEGY, BATTERY_MODEL
+from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR, CAPACITY, CHARGING_RATE, STRATEGY, BATTERY
 from tibber_insights.battery import Battery
 from tibber_insights.billing import forecast_2027_bill
 from tibber_insights.simulation import run_battery_simulation
@@ -31,44 +31,35 @@ def main():
     # rates = [0.8, 1.2, 2.4, 4]
 
     batteries = [
-        Battery('Marstek Venus A', capacity=10.6, rate=1.2, efficiency=0.84, price=2575),
-        Battery('Marstek Venus A small', capacity=2.1, rate=1.2, efficiency=0.84, price=650),
+        Battery('Marstek Venus A', capacity=10.6, charging_rate=1.2, rte=0.84, price=2575),
+        Battery('Marstek Venus A small', capacity=2.1, charging_rate=1.2, rte=0.84, price=650),
     ]
 
     baseline_bill = forecast['net_bill_2027_eur']
 
-    strategies = {
-        "Daily linear optimization": strategy_daily_lp,
-    }
+    strategies = {"Daily linear optimization": strategy_daily_lp}
 
     sim_results = []
-    behavior_plots_data = []
+    battery_behavior = {}
 
     for battery in batteries:
+        battery_behavior[battery] = {}
         for strategy_name, strategy_fn in strategies.items():
-            sim_df = run_battery_simulation(
-                sim_df=df,
-                battery=battery,
-                strategy_fn=strategy_fn,
-            )
+            sim_df = run_battery_simulation(sim_df=df, battery=battery, strategy_fn=strategy_fn)
             savings = sim_df.Savings.sum()
 
             if SANITY_CHECK:
-                behavior_plots_data.append({
-                    'sim_df': sim_df,
-                    'battery': battery,
-                    STRATEGY: strategy_name,
-                })
+                battery_behavior[battery][strategy_name] = sim_df
 
             sim_results.append({
-                'battery': battery,
+                BATTERY: battery,
                 STRATEGY: strategy_name,
                 'annual_savings_eur': savings,
                 'net_bill_eur': baseline_bill - savings,
                 'savings_pct': savings / baseline_bill * 100,
             })
 
-    plot_interactive_battery_behavior(behavior_plots_data, days=10)
+    plot_interactive_battery_behavior(battery_behavior, days=10)
 
     results_df = pd.DataFrame(sim_results)
 
@@ -76,15 +67,12 @@ def main():
     print(f"║ {'BATTERY SIMULATION RESULTS (2027)':^86} ║")
     print("╠" + "═" * 88 + "╣")
 
-    display_df = results_df.sort_values(
-        [STRATEGY, 'annual_savings_eur'],
-        ascending=[True, False],
-    )
-    display_df[BATTERY_MODEL] = display_df['battery'].apply(lambda b: b.name)
-    display_df[CAPACITY] = display_df['battery'].apply(lambda b: b.capacity)
-    display_df[CHARGING_RATE] = display_df['battery'].apply(lambda b: b.rate)
+    display_df = results_df.sort_values([STRATEGY, 'annual_savings_eur'], ascending=[True, False])
+    display_df[CAPACITY] = display_df[BATTERY].apply(lambda b: b.capacity)
+    display_df[CHARGING_RATE] = display_df[BATTERY].apply(lambda b: b.charging_rate)
+    display_df[BATTERY] = display_df[BATTERY].apply(lambda b: b.name)
 
-    display_df = display_df[[BATTERY_MODEL, STRATEGY, CAPACITY, CHARGING_RATE, 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
+    display_df = display_df[[BATTERY, STRATEGY, CAPACITY, CHARGING_RATE, 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
 
     # Rename columns for prettier display
     # display_df.columns = ['Strategy', f'Cap ({SOC.unit})', f'Rate ({NET_HOUSEHOLD.unit})', f'Savings ({EUR})', f'Net Bill ({EUR})', 'Savings %']
@@ -105,8 +93,8 @@ def main():
             results_df.loc[results_df.groupby(STRATEGY)['annual_savings_eur'].idxmax()]
             .sort_values('annual_savings_eur', ascending=False)
         )
-        best_by_strategy[CAPACITY] = best_by_strategy['battery'].apply(lambda b: b.capacity)
-        best_by_strategy[CHARGING_RATE] = best_by_strategy['battery'].apply(lambda b: b.rate)
+        best_by_strategy[CAPACITY] = best_by_strategy[BATTERY].apply(lambda b: b.capacity)
+        best_by_strategy[CHARGING_RATE] = best_by_strategy[BATTERY].apply(lambda b: b.charging_rate)
 
         print("\n" + "╔" + "═" * 88 + "╗")
         print(f"║ {'🏆 BEST CONFIGURATION PER STRATEGY':^86}║")
@@ -128,13 +116,13 @@ def main():
 
         # -- Surface plots per strategy ------------------------------------------------
         if PLOT:
-            rates = sorted(list(set(res['battery'].rate for res in sim_results)))
-            capacities = sorted(list(set(res['battery'].capacity for res in sim_results)))
+            rates = sorted(list(set(res[BATTERY].charging_rate for res in sim_results)))
+            capacities = sorted(list(set(res[BATTERY].capacity for res in sim_results)))
             for strategy_name in strategies.keys():
                 # We need to adapt results_df for plot_battery_savings_surface if it expects CAPACITY/CHARGING_RATE columns
                 plot_df = results_df.copy()
-                plot_df[CAPACITY] = plot_df['battery'].apply(lambda b: b.capacity)
-                plot_df[CHARGING_RATE] = plot_df['battery'].apply(lambda b: b.rate)
+                plot_df[CAPACITY] = plot_df[BATTERY].apply(lambda b: b.capacity)
+                plot_df[CHARGING_RATE] = plot_df[BATTERY].apply(lambda b: b.charging_rate)
                 plot_battery_savings_surface(plot_df, strategy_name, rates, capacities)
 
 if __name__ == "__main__":

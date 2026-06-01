@@ -61,8 +61,8 @@ def strategy_daily_lp(future_df, current_soc, battery):
                  - dis[t] / EFFICIENCY_DISCHARGING)
 
         # Rate of (dis)charge constraints with binary switch
-        prob += ch[t] * EFFICIENCY_CHARGING <= battery.rate * is_charging[t]
-        prob += dis[t] / EFFICIENCY_DISCHARGING <= battery.rate * (1 - is_charging[t])
+        prob += ch[t] * EFFICIENCY_CHARGING <= battery.charging_rate * is_charging[t]
+        prob += dis[t] / EFFICIENCY_DISCHARGING <= battery.charging_rate * (1 - is_charging[t])
 
         # Household Flow Boundaries
         prob += ch_h[t] <= e_prod[t]

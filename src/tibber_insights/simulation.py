@@ -49,10 +49,10 @@ def run_battery_simulation(sim_df, battery, strategy_fn):
 
             # 1. Total (dis)charge cannot exceed the max rate
             eps = 1e-4  # some margin to counter numerical errors
-            assert -eps <= soc_charge_bump <= battery.rate + eps, \
-                f"Total charge {soc_charge_bump} should be between 0 and max rate {battery.rate}"
-            assert -eps <= soc_discharge_dip <= battery.rate + eps, \
-                f"Total discharge {soc_discharge_dip} should be between 0 and max rate {battery.rate}"
+            assert -eps <= soc_charge_bump <= battery.charging_rate + eps, \
+                f"Total charge {soc_charge_bump} should be between 0 and max rate {battery.charging_rate}"
+            assert -eps <= soc_discharge_dip <= battery.charging_rate + eps, \
+                f"Total discharge {soc_discharge_dip} should be between 0 and max rate {battery.charging_rate}"
 
             # Update SOC for next time step and check if SOC is within limits
             current_soc = current_soc + soc_charge_bump - soc_discharge_dip

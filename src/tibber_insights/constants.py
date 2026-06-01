@@ -54,11 +54,11 @@ EXPECTED_MAX_CONSUMPTION = Quantity("Expected max consumption", KWH)
 CAPACITY = Quantity("Capacity", KWH)
 CHARGING_RATE = Quantity("Charging rate", KW)
 STRATEGY = Quantity("Strategy", "")
-BATTERY_MODEL = Quantity("Battery model", "")
-DROPDOWN_QUANTITIES = [BATTERY_MODEL, STRATEGY]
+BATTERY = Quantity("Battery", "")
+DROPDOWN_QUANTITIES = [BATTERY, STRATEGY]
 
 PRICE = Quantity("Price", EUR)
-EFFICIENCY = Quantity("Efficiency", "")
+RTE = Quantity("RTE", "")
 
 if __name__ == "__main__":
     print(f"{NET_HOUSEHOLD.l} ({NET_HOUSEHOLD.unit})")

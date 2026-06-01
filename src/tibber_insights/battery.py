@@ -1,11 +1,17 @@
+from tibber_insights.constants import CAPACITY, CHARGING_RATE, RTE
+
 
 class Battery:
-    def __init__(self, name, capacity, rate, efficiency, price):
+    def __init__(self, name, capacity, charging_rate, rte, price):
         self.name = name
         self.capacity = capacity
-        self.rate = rate
-        self.efficiency = efficiency
+        self.charging_rate = charging_rate
+        self.rte = rte
         self.price = price
 
     def __repr__(self):
-        return f"Battery(name='{self.name}', capacity={self.capacity}, rate={self.rate})"
+        return (f"{self.name} ("
+                f"{self.capacity} {CAPACITY.unit}, "
+                f"{self.charging_rate} {CHARGING_RATE.unit}, "
+                f"{RTE}={self.rte}"
+                f")")
