@@ -38,31 +38,9 @@ def plot_interactive_battery_behavior(all_results, days=10):
     trace_groups = _add_result_traces(fig, all_results)
     for idx in trace_groups[0]['indices']:
         fig.data[idx].visible = True  # Show by default the first group from dropdown menu
+    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
 
-    # Extract unique values for dropdowns and map them to their constants
-    values_per_dropdown_quantity = {q: sorted(list(set(r[q] for r in all_results))) for q in DROPDOWN_QUANTITIES}
-    update_menus = _create_dropdown_menus(fig, common_trace_indices, trace_groups, values_per_dropdown_quantity)
-
-    fig.update_layout(
-        updatemenus=update_menus,
-        height=1000,
-        template="plotly_white",
-        hovermode='x unified',
-        showlegend=True,
-        legend2=dict(orientation="h", yanchor="top", y=0.79, xanchor="right", x=1),
-        legend3=dict(orientation="h", yanchor="top", y=0.41, xanchor="right", x=1),
-        legend4=dict(orientation="h", yanchor="top", y=0.19, xanchor="right", x=1),
-        barmode='relative'
-    )
-
-    fig.update_yaxes(fixedrange=True)
-
-    if days:
-        end_date = first_df[TIME].max()
-        start_date = end_date - pd.Timedelta(days=days)
-        fig.update_xaxes(range=[start_date, end_date])
-
-    fig.show()
+    _polish_layout(fig, first_df, days)
 
 
 def _create_base_figure():
@@ -87,7 +65,7 @@ def _create_base_figure():
     return fig
 
 
-def _add_interactive_trace(fig, subplot_row, quantity, y_values, current_df, visible=True, trace_type=go.Scatter, **kwargs):
+def _add_interactive_trace(fig, subplot_row, quantity, current_df, swap=False, visible=True, trace_type=go.Scatter, **kwargs):
     """
     Adds a standardized trace to a specific subplot in the interactive figure.
 
@@ -98,8 +76,8 @@ def _add_interactive_trace(fig, subplot_row, quantity, y_values, current_df, vis
         fig (plotly.graph_objects.Figure): The figure to add the trace to.
         subplot_row (int): The row index (1-based) of the subplot.
         quantity (Quantity): The quantity being plotted (used for naming and units).
-        y_values (iterable): The data for the Y-axis.
         current_df (pd.DataFrame): The source DataFrame (used for the TIME X-axis).
+        swap (bool, optional): Whether to swap the sign of the Y-values. Defaults to False.
         visible (bool or "legendonly", optional): Initial visibility of the trace. Defaults to True.
         trace_type (type, optional): The Plotly trace class (e.g., go.Scatter, go.Bar).
             Defaults to go.Scatter.
@@ -108,9 +86,10 @@ def _add_interactive_trace(fig, subplot_row, quantity, y_values, current_df, vis
     Returns:
         int: The index of the added trace in `fig.data`.
     """
+
     trace = trace_type(
         x=current_df[TIME],
-        y=y_values,
+        y=current_df[quantity] * (-1)**swap,
         name=quantity,
         legend=f'legend{subplot_row}',
         hovertemplate=f"{quantity}: %{{y:.3f}} {quantity.unit}<extra></extra>",
@@ -136,10 +115,10 @@ def _add_common_traces(fig, first_df):
         list[int]: The indices of the added common traces in `fig.data`.
     """
     indices = [
-        _add_interactive_trace(fig, 3, NET_BUY_PRICE, first_df[NET_BUY_PRICE], first_df, line=dict(color='orange')),
-        _add_interactive_trace(fig, 3, NET_SELL_PRICE, first_df[NET_SELL_PRICE], first_df, line=dict(color='blue')),
-        _add_interactive_trace(fig, 2, NET_HOUSEHOLD, first_df[NET_HOUSEHOLD], first_df, line=dict(color='grey', dash='dash')),
-        _add_interactive_trace(fig, 4, COST_WO_BATTERY, first_df[COST_WO_BATTERY], first_df, line=dict(color='gray', dash='dash')),
+        _add_interactive_trace(fig, 3, NET_BUY_PRICE, first_df, line=dict(color='orange')),
+        _add_interactive_trace(fig, 3, NET_SELL_PRICE, first_df, line=dict(color='blue')),
+        _add_interactive_trace(fig, 2, NET_HOUSEHOLD, first_df, line=dict(color='grey', dash='dash')),
+        _add_interactive_trace(fig, 4, COST_WO_BATTERY, first_df, line=dict(color='gray', dash='dash')),
     ]
     # Add horizontal lines (static)
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
@@ -166,14 +145,14 @@ def _add_result_traces(fig, all_results):
     for res in all_results:
         df = res['sim_df']
         group_indices = [
-            _add_interactive_trace(fig, 1, SOC, df[SOC], df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
-            _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BATTERY, df[NET_HOUSEHOLD_WITH_BATTERY], df, visible=False, line=dict(color='black')),
-            _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df[CHARGE_FROM_HOUSE], df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
-            _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df[CHARGE_FROM_GRID], df, visible=False, trace_type=go.Bar, marker_color='lightgreen', legendgroup='charge'),
-            _add_interactive_trace(fig, 2, DISCHARGE_TO_HOUSE, -df[DISCHARGE_TO_HOUSE], df, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
-            _add_interactive_trace(fig, 2, DISCHARGE_TO_GRID, -df[DISCHARGE_TO_GRID], df, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
-            _add_interactive_trace(fig, 4, COST_WITH_BATTERY, df[COST_WITH_BATTERY], df, visible=False, line=dict(color='indigo')),
-            _add_interactive_trace(fig, 4, SAVINGS_PER_DAY, df[SAVINGS_PER_DAY], df, visible=False, trace_type=go.Bar),
+            _add_interactive_trace(fig, 1, SOC, df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
+            _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BATTERY, df, visible=False, line=dict(color='black')),
+            _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
+            _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df, visible=False, trace_type=go.Bar, marker_color='lightgreen', legendgroup='charge'),
+            _add_interactive_trace(fig, 2, DISCHARGE_TO_HOUSE, df, swap=True, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
+            _add_interactive_trace(fig, 2, DISCHARGE_TO_GRID, df, swap=True, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
+            _add_interactive_trace(fig, 4, COST_WITH_BATTERY, df, visible=False, line=dict(color='indigo')),
+            _add_interactive_trace(fig, 4, SAVINGS_PER_DAY, df, visible=False, trace_type=go.Bar),
         ]
         trace_groups.append({
             CAPACITY: res[CAPACITY],
@@ -184,7 +163,7 @@ def _add_result_traces(fig, all_results):
     return trace_groups
 
 
-def _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_quantities):
+def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results):
     """
     Constructs the Plotly updatemenus for Capacity, Charging Rate, and Strategy.
 
@@ -197,6 +176,8 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_qua
     Returns:
         list[dict]: A list of Plotly updatemenu configurations.
     """
+    # Extract unique values for dropdowns and map them to their constants
+    values_per_dropdown_quantity = {q: sorted(list(set(r[q] for r in all_results))) for q in DROPDOWN_QUANTITIES}
     def get_visibility_filter(dim_key, value):
         vis = [False] * len(fig.data)
         for idx in common_trace_indices:
@@ -209,7 +190,7 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_qua
 
     update_menus = []
     x_positions = [0.35, 0.5, 0.65]
-    for i, (quantity_to_filter, values) in enumerate(dropdown_quantities.items()):
+    for i, (quantity_to_filter, values) in enumerate(values_per_dropdown_quantity.items()):
         buttons = []
         for val in values:
             buttons.append(dict(
@@ -226,7 +207,19 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, dropdown_qua
             y=1.15, yanchor="top",
             font=dict(size=14)
         ))
-    return update_menus
+
+    fig.update_layout(
+        updatemenus=update_menus,
+        height=1000,
+        template="plotly_white",
+        hovermode='x unified',
+        showlegend=True,
+        legend2=dict(orientation="h", yanchor="top", y=0.79, xanchor="right", x=1),
+        legend3=dict(orientation="h", yanchor="top", y=0.41, xanchor="right", x=1),
+        legend4=dict(orientation="h", yanchor="top", y=0.19, xanchor="right", x=1),
+        barmode='relative'
+    )
+    return fig
 
 
 def plot_battery_savings_surface(results_df, strategy_name, rates, capacities):
@@ -261,5 +254,16 @@ def plot_battery_savings_surface(results_df, strategy_name, rates, capacities):
         width=900,
         height=700,
     )
+
+    fig.show()
+
+
+def _polish_layout(fig=None, first_df=None, days=None):
+    fig.update_yaxes(fixedrange=True)
+
+    if days:
+        end_date = first_df[TIME].max()
+        start_date = end_date - pd.Timedelta(days=days)
+        fig.update_xaxes(range=[start_date, end_date])
 
     fig.show()

@@ -39,7 +39,7 @@ def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
     dis = [dis_h[t] + dis_g[t] for t in range(T)]
 
     # Binary variables to prevent simultaneous charging and discharging
-    # is_charging = [pulp.LpVariable(f"is_charging_{t}", cat=pulp.LpBinary) for t in range(T)]
+    is_charging = [pulp.LpVariable(f"is_charging_{t}", cat=pulp.LpBinary) for t in range(T)]
 
     soc = [pulp.LpVariable(f"soc_{t}", lowBound=0, upBound=capacity_kwh) for t in range(T)]
 
@@ -62,8 +62,8 @@ def strategy_daily_lp(row, future_df, current_soc, capacity_kwh, max_rate_kw):
                  - dis[t] / EFFICIENCY_DISCHARGING)
 
         # Rate of (dis)charge constraints with binary switch
-        prob += ch[t] * EFFICIENCY_CHARGING <= max_rate_kw # * is_charging[t]
-        prob += dis[t] / EFFICIENCY_DISCHARGING <= max_rate_kw # * (1 - is_charging[t])
+        prob += ch[t] * EFFICIENCY_CHARGING <= max_rate_kw * is_charging[t]
+        prob += dis[t] / EFFICIENCY_DISCHARGING <= max_rate_kw * (1 - is_charging[t])
 
         # Household Flow Boundaries
         prob += ch_h[t] <= e_prod[t]
