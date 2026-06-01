@@ -192,43 +192,37 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_beha
         return vis
 
     update_menus = []
-    x_positions = [0.35, 0.75]
+    x_positions = {BATTERY: 0.35, STRATEGY: 0.75}
 
-    # --- Battery Model Dropdown (Left) ---
-    battery_buttons = []
-    for battery in battery_behavior.keys():
-        battery_buttons.append(dict(
-            method="update",
-            label=f"{battery.name}: {battery.properties_to_short_string()}",
-            args=[{"visible": get_visibility_filter(BATTERY, battery.name)}]
+    # Define button groups
+    button_groups = [
+        (BATTERY, battery_behavior.keys()),
+        (STRATEGY, strategies.keys())
+    ]
+    for dim_key, options in button_groups:
+        buttons = []
+        for opt in options:
+            if dim_key == BATTERY:
+                label = f"{opt.name}: {opt.properties_to_short_string()}"
+                value = opt.name
+            else:
+                label = f"{STRATEGY}: {opt}"
+                value = opt
+
+            buttons.append(dict(
+                method="update",
+                label=label,
+                args=[{"visible": get_visibility_filter(dim_key, value)}]
+            ))
+
+        update_menus.append(dict(
+            buttons=buttons,
+            direction="down",
+            showactive=True,
+            x=x_positions[dim_key], xanchor="center",
+            y=1.15, yanchor="top",
+            font=dict(size=14, family="Courier New, monospace")
         ))
-
-    update_menus.append(dict(
-        buttons=battery_buttons,
-        direction="down",
-        showactive=True,
-        x=x_positions[0], xanchor="center",
-        y=1.15, yanchor="top",
-        font=dict(size=14, family="Courier New, monospace")
-    ))
-
-    # --- Strategy Dropdown (Right) ---
-    strategy_buttons = []
-    for strategy_name in strategies.keys():
-        strategy_buttons.append(dict(
-            method="update",
-            label=f"{STRATEGY}: {strategy_name}",
-            args=[{"visible": get_visibility_filter(STRATEGY, strategy_name)}]
-        ))
-
-    update_menus.append(dict(
-        buttons=strategy_buttons,
-        direction="down",
-        showactive=True,
-        x=x_positions[1], xanchor="center",
-        y=1.15, yanchor="top",
-        font=dict(size=14, family="Courier New, monospace")
-    ))
 
     fig.update_layout(
         updatemenus=update_menus,
