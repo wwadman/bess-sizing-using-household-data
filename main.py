@@ -1,7 +1,7 @@
 import pandas as pd
 from itertools import product
 from tibber_insights.data_loader import load_monthly_files
-from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR, CAPACITY, CHARGING_RATE, STRATEGY
+from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR, CAPACITY, CHARGING_RATE, STRATEGY, EFFICIENCY, PRICE, BATTERY_MODEL
 from tibber_insights.billing import forecast_2027_bill
 from tibber_insights.simulation import run_battery_simulation
 from tibber_insights.strategies import strategy_daily_lp
@@ -27,12 +27,16 @@ def main():
     forecast = forecast_2027_bill(df)
 
     # -- Battery simulation --------------------------------------------------------
-    capacities = [5, 10, 20]
-    rates = [0.8, 1.2, 2.4, 4]
-    capacities = [2000]
-    rates = [400]
-    capacities = [5, 20]
-    rates = [4]
+    # capacities = [5, 10, 20]
+    # rates = [0.8, 1.2, 2.4, 4]
+    # capacities = [2000]
+    # rates = [400]
+    # capacities = [5, 20]
+    # rates = [4]
+
+    batteries = {}
+    batteries['Marstek Venus A'] = {CAPACITY: 10.6, CHARGING_RATE: 1.2, EFFICIENCY: 0.84, PRICE: 2575}
+    batteries['Marstek Venus A small'] = {CAPACITY: 2.1, CHARGING_RATE: 1.2, EFFICIENCY: 0.84, PRICE: 650}
 
     baseline_bill = forecast['net_bill_2027_eur']
 
@@ -43,7 +47,9 @@ def main():
     sim_results = []
     behavior_plots_data = []
 
-    for capacity, rate in product(capacities, rates):
+    for battery_model, config in batteries.items():
+        capacity = config[CAPACITY]
+        rate = config[CHARGING_RATE]
         for strategy_name, strategy_fn in strategies.items():
             sim_df = run_battery_simulation(
                 sim_df=df,
@@ -58,10 +64,12 @@ def main():
                     'sim_df': sim_df,
                     CAPACITY: capacity,
                     CHARGING_RATE: rate,
-                    STRATEGY: strategy_name
+                    STRATEGY: strategy_name,
+                    BATTERY_MODEL: battery_model
                 })
 
             sim_results.append({
+                BATTERY_MODEL: battery_model,
                 STRATEGY: strategy_name,
                 CAPACITY: capacity,
                 CHARGING_RATE: rate,
@@ -81,13 +89,13 @@ def main():
     display_df = results_df.sort_values(
         [STRATEGY, 'annual_savings_eur'],
         ascending=[True, False],
-    )[[STRATEGY, CAPACITY, CHARGING_RATE, 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
+    )[[BATTERY_MODEL, STRATEGY, CAPACITY, CHARGING_RATE, 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
 
     # Rename columns for prettier display
     # display_df.columns = ['Strategy', f'Cap ({SOC.unit})', f'Rate ({NET_HOUSEHOLD.unit})', f'Savings ({EUR})', f'Net Bill ({EUR})', 'Savings %']
 
     sim_table = display_df.to_string(index=False, justify='center', formatters={
-        f'Cap ({SOC.unit})': '{:.0f}'.format,
+        f'Cap ({SOC.unit})': '{:.1f}'.format,
         f'Rate ({NET_HOUSEHOLD.unit})': '{:.1f}'.format,
         f'Savings ({EUR})': '{:,.2f}'.format,
         f'Net Bill ({EUR})': '{:,.2f}'.format,
@@ -111,7 +119,7 @@ def main():
         best_display.columns = ['Strategy', f'Cap ({SOC.unit})', f'Rate ({NET_HOUSEHOLD.unit})', f'Savings ({EUR})', 'Savings %', f'Net Bill ({EUR})']
 
         best_table = best_display.to_string(index=False, justify='center', formatters={
-            f'Cap ({SOC.unit})': '{:.0f}'.format,
+            f'Cap ({SOC.unit})': '{:.1f}'.format,
             f'Rate ({NET_HOUSEHOLD.unit})': '{:.1f}'.format,
             f'Savings ({EUR})': '{:,.2f}'.format,
             f'Net Bill ({EUR})': '{:,.2f}'.format,
@@ -123,6 +131,8 @@ def main():
 
         # -- Surface plots per strategy ------------------------------------------------
         if PLOT:
+            rates = sorted(list(set(res[CHARGING_RATE] for res in sim_results)))
+            capacities = sorted(list(set(res[CAPACITY] for res in sim_results)))
             for strategy_name in strategies.keys():
                 plot_battery_savings_surface(results_df, strategy_name, rates, capacities)
 

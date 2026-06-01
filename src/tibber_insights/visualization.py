@@ -6,7 +6,7 @@ from .constants import (
     SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BATTERY, COST_WITH_BATTERY,
     EUR, KW, KWH, TIME, SAVINGS_PER_DAY,
     NET_HOUSEHOLD_WITH_BATTERY,
-    CAPACITY, CHARGING_RATE, STRATEGY, DROPDOWN_QUANTITIES
+    CAPACITY, CHARGING_RATE, STRATEGY, BATTERY_MODEL, DROPDOWN_QUANTITIES
 )
 
 
@@ -154,12 +154,14 @@ def _add_result_traces(fig, all_results):
             _add_interactive_trace(fig, 4, COST_WITH_BATTERY, df, visible=False, line=dict(color='indigo')),
             _add_interactive_trace(fig, 4, SAVINGS_PER_DAY, df, visible=False, trace_type=go.Bar),
         ]
-        trace_groups.append({
-            CAPACITY: res[CAPACITY],
-            CHARGING_RATE: res[CHARGING_RATE],
-            STRATEGY: res[STRATEGY],
+        group = {
             'indices': group_indices
-        })
+        }
+        # Add all metadata from results to group for filtering
+        for q in DROPDOWN_QUANTITIES:
+            if q in res:
+                group[q] = res[q]
+        trace_groups.append(group)
     return trace_groups
 
 
@@ -176,8 +178,6 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
     Returns:
         list[dict]: A list of Plotly updatemenu configurations.
     """
-    # Extract unique values for dropdowns and map them to their constants
-    values_per_dropdown_quantity = {q: sorted(list(set(r[q] for r in all_results))) for q in DROPDOWN_QUANTITIES}
     def get_visibility_filter(dim_key, value):
         vis = [False] * len(fig.data)
         for idx in common_trace_indices:
@@ -189,15 +189,32 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, all_results)
         return vis
 
     update_menus = []
-    x_positions = [0.35, 0.5, 0.65]
-    for i, (quantity_to_filter, values) in enumerate(values_per_dropdown_quantity.items()):
+    x_positions = [0.35, 0.65]
+    
+    # Iterate through dropdown quantities in their defined order
+    # Extract unique values for dropdowns and map them to their constants
+    values_per_dropdown_quantity = {q: sorted(list(set(r[q] for r in all_results))) for q in DROPDOWN_QUANTITIES}
+    items = list(values_per_dropdown_quantity.items())
+    for i, (quantity_to_filter, values) in enumerate(items):
         buttons = []
         for val in values:
+            unit_str = f" {quantity_to_filter.unit}" if quantity_to_filter.unit else ""
+            label = f"{quantity_to_filter}: {val}{unit_str}"
+
+            # Special handling for Battery Model to include Capacity and Rate
+            if quantity_to_filter == BATTERY_MODEL:
+                # Find a result with this battery model to get its capacity and rate
+                res_match = next((r for r in all_results if r[BATTERY_MODEL] == val), None)
+                if res_match:
+                    cap = res_match[CAPACITY]
+                    rate = res_match[CHARGING_RATE]
+                    label = f"{quantity_to_filter}: {val} ({cap} {CAPACITY.unit}, {rate} {CHARGING_RATE.unit})"
+
             buttons.append(dict(
                 method="update",
-                label=f"{quantity_to_filter}: {val} {quantity_to_filter.unit}",
+                label=label,
                 args=[{"visible": get_visibility_filter(quantity_to_filter, val)},
-                      {"title": f"Battery Behavior (Filtered by {quantity_to_filter}: {val})"}]
+                      {"title": f"Battery Behavior (Filtered by {label})"}]
             ))
         update_menus.append(dict(
             buttons=buttons,
