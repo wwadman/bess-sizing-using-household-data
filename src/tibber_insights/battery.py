@@ -1,4 +1,4 @@
-from tibber_insights.constants import CAPACITY, CHARGING_RATE, RTE
+from tibber_insights.constants import CAPACITY, CHARGING_RATE, RTE, BATTERY_PROPERTIES
 
 
 class Battery:
@@ -8,10 +8,23 @@ class Battery:
         self.charging_rate = charging_rate
         self.rte = rte
         self.price = price
+        self.properties = [self.capacity, self.charging_rate, self.rte, self.price]
 
-    def __repr__(self):
-        return (f"{self.name} ("
-                f"{self.capacity} {CAPACITY.unit}, "
-                f"{self.charging_rate} {CHARGING_RATE.unit}, "
-                f"{RTE}={self.rte}"
-                f")")
+    def properties_to_long_string(self):
+        properties = [f"{PROP} = {val}{PROP.unit}" for (val, PROP) in zip(self.properties, BATTERY_PROPERTIES)]
+        return ", ".join(properties)
+
+    def properties_to_short_string(self):
+        properties = [f"{val}{PROP.unit}" for (val, PROP) in zip(self.properties, BATTERY_PROPERTIES)]
+        return ", ".join(properties)
+
+    def __str__(self):
+        return self.name
+
+
+if __name__ == "__main__":
+    bat = Battery("Test battery", 5, 1.2, 0.81, 100)
+    print(bat)
+    print(bat.properties_to_long_string())
+    print(bat.properties_to_short_string())
+

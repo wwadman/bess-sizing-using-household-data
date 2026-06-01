@@ -10,7 +10,7 @@ from .constants import (
 )
 
 
-def plot_interactive_battery_behavior(battery_behavior, days=10):
+def plot_interactive_battery_behavior(battery_behavior, strategies, days=10):
     """
     Creates an interactive Plotly figure with 4 subplots showing battery behavior over time.
     
@@ -20,6 +20,7 @@ def plot_interactive_battery_behavior(battery_behavior, days=10):
     Args:
         battery_behavior (dict): A dict with Battery instances as keys, and
             values are dicts with strategy names as keys and sim_df as values.
+        strategies (list): List of strategy names to include in the dropdown.
         days (int, optional): The number of days to show by default (zoomed in).
             Defaults to 10.
     """
@@ -38,7 +39,7 @@ def plot_interactive_battery_behavior(battery_behavior, days=10):
     trace_groups = _add_result_traces(fig, battery_behavior)
     for idx in trace_groups[0]['indices']:
         fig.data[idx].visible = True  # Show by default the first group from dropdown menu
-    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_behavior)
+    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_behavior, strategies)
 
     _polish_layout(fig, first_df, days)
 
@@ -163,7 +164,7 @@ def _add_result_traces(fig, battery_behavior):
     return trace_groups
 
 
-def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_behavior):
+def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_behavior, strategies):
     """
     Constructs the Plotly updatemenus for Capacity, Charging Rate, and Strategy.
 
@@ -198,9 +199,8 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_beha
     for battery in battery_behavior.keys():
         battery_buttons.append(dict(
             method="update",
-            label=battery.__repr__(),
-            args=[{"visible": get_visibility_filter(BATTERY, battery.name)},
-                  {"title": f"Battery Behavior (Filtered by {battery})"}]
+            label=f"{battery.name}: {battery.properties_to_short_string()}",
+            args=[{"visible": get_visibility_filter(BATTERY, battery.name)}]
         ))
 
     update_menus.append(dict(
@@ -214,20 +214,11 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_beha
 
     # --- Strategy Dropdown (Right) ---
     strategy_buttons = []
-    # Get all unique strategy names
-    all_strategies = set()
-    for strategies_dict in battery_behavior.values():
-        all_strategies.update(strategies_dict.keys())
-    
-    for val in sorted(list(all_strategies)):
-        unit_str = f" {STRATEGY.unit}" if STRATEGY.unit else ""
-        label = f"{STRATEGY}: {val}{unit_str}"
-
+    for strategy_name in strategies.keys():
         strategy_buttons.append(dict(
             method="update",
-            label=label,
-            args=[{"visible": get_visibility_filter(STRATEGY, val)},
-                  {"title": f"Battery Behavior (Filtered by {label})"}]
+            label=f"{STRATEGY}: {strategy_name}",
+            args=[{"visible": get_visibility_filter(STRATEGY, strategy_name)}]
         ))
 
     update_menus.append(dict(

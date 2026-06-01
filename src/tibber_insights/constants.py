@@ -51,14 +51,18 @@ NET_VALUE = Quantity("Net value", EUR)
 EXPECTED_MAX_CONSUMPTION = Quantity("Expected max consumption", KWH)
 
 # Quantities to filter above plots in dropdown menu
-CAPACITY = Quantity("Capacity", KWH)
-CHARGING_RATE = Quantity("Charging rate", KW)
 STRATEGY = Quantity("Strategy", "")
 BATTERY = Quantity("Battery", "")
 DROPDOWN_QUANTITIES = [BATTERY, STRATEGY]
 
-PRICE = Quantity("Price", EUR)
+# Battery properties
+CAPACITY = Quantity("Capacity", KWH)
+CHARGING_RATE = Quantity("Charging rate", KW)
 RTE = Quantity("RTE", "")
+PRICE = Quantity("Price", EUR)
+BATTERY_PROPERTIES = [CAPACITY, CHARGING_RATE, RTE, PRICE]
+
+
 
 if __name__ == "__main__":
     print(f"{NET_HOUSEHOLD.l} ({NET_HOUSEHOLD.unit})")
