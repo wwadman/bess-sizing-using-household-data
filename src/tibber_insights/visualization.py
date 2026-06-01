@@ -121,8 +121,8 @@ def _add_common_traces(fig, first_df):
         list[int]: The indices of the added common traces in `fig.data`.
     """
     indices = [
-        _add_interactive_trace(fig, 3, NET_BUY_PRICE, first_df, line=dict(color='orange'), legendgroup='prices'),
-        _add_interactive_trace(fig, 3, NET_SELL_PRICE, first_df, line=dict(color='blue'), legendgroup='prices'),
+        _add_interactive_trace(fig, 3, NET_BUY_PRICE, first_df, line=dict(color='firebrick'), legendgroup='prices'),
+        _add_interactive_trace(fig, 3, NET_SELL_PRICE, first_df, line=dict(color='darkseagreen'), legendgroup='prices'),
         _add_interactive_trace(fig, 2, NET_HOUSEHOLD, first_df, line=dict(color='grey', dash='dash'), legendgroup='net_household'),
         _add_interactive_trace(fig, 4, COST_WO_BATTERY, first_df, line=dict(color='gray', dash='dash'), legendgroup='costs'),
     ]
@@ -153,13 +153,13 @@ def _add_result_traces(fig, battery_behavior):
             group_indices = [
                 _add_interactive_trace(fig, 1, SOC, df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
                 _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BATTERY, df, visible=False, line=dict(color='black'), legendgroup='net_household'),
-                _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
-                _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df, visible=False, trace_type=go.Bar, marker_color='lightgreen', legendgroup='charge'),
+                _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df, visible=False, trace_type=go.Bar, marker_color='darkseagreen', legendgroup='charge'),
+                _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
                 _add_interactive_trace(fig, 2, DISCHARGE_TO_HOUSE, df, swap=True, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
                 _add_interactive_trace(fig, 2, DISCHARGE_TO_GRID, df, swap=True, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
                 _add_interactive_trace(fig, 4, COST_WITH_BATTERY, df, visible=False, line=dict(color='indigo'), legendgroup='costs'),
-                _add_interactive_trace(fig, 4, CUMULATIVE_SAVINGS_DAILY, df, visible=False, trace_type=go.Bar, opacity=0.5, marker_color='#EF553B', legendgroup='savings'),
-                _add_interactive_trace(fig, 4, DAILY_SAVINGS_TOTAL, df, visible=False, trace_type=go.Bar, opacity=1.0, marker_color='#EF553B', legendgroup='savings'),
+                _add_interactive_trace(fig, 4, CUMULATIVE_SAVINGS_DAILY, df, visible=False, trace_type=go.Bar, opacity=0.5, marker_color='orange', legendgroup='savings'),
+                _add_interactive_trace(fig, 4, DAILY_SAVINGS_TOTAL, df, visible=False, trace_type=go.Bar, opacity=1.0, marker_color='darkorange', legendgroup='savings'),
             ]
             group = {
                 'indices': group_indices,
