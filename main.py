@@ -1,7 +1,9 @@
 import pandas as pd
+
+from tibber_insights.batteries.candidate_batteries import MAX_CAPACITY_TO_CONSIDER
+from tibber_insights.batteries.helper_functions import get_available_battery_packages
 from tibber_insights.data_loader import load_monthly_files
 from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR, CAPACITY, CHARGING_RATE, STRATEGY, BATTERY
-from tibber_insights.battery import Battery
 from tibber_insights.billing import forecast_2027_bill
 from tibber_insights.simulation import run_battery_simulation
 from tibber_insights.strategies import strategy_daily_lp
@@ -27,13 +29,7 @@ def main():
     forecast = forecast_2027_bill(df)
 
     # -- Battery simulation --------------------------------------------------------
-    # capacities = [5, 10, 20]
-    # rates = [0.8, 1.2, 2.4, 4]
-
-    batteries = [
-        Battery('Marstek Venus A', capacity=10.6, charging_rate=1.2, rte=0.84, price=2575),
-        Battery('Marstek Venus A small', capacity=2.1, charging_rate=1.2, rte=0.84, price=650),
-    ]
+    battery_packs = get_available_battery_packages(max_capacity_to_consider=MAX_CAPACITY_TO_CONSIDER)
 
     baseline_bill = forecast['net_bill_2027_eur']
 
@@ -42,7 +38,7 @@ def main():
     sim_results = []
     battery_behavior = {}
 
-    for battery in batteries:
+    for battery in battery_packs:
         battery_behavior[battery] = {}
         for strategy_name, strategy_fn in strategies.items():
             sim_df = run_battery_simulation(sim_df=df, battery=battery, strategy_fn=strategy_fn)

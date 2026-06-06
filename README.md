@@ -35,6 +35,7 @@ help with that.
 ## Open issues
 - Check if the optimal strategy indeed fully exploits "own usage".
 - Add battery price in cost comparison
+- 
 ## Nice-to-haves
 - Add a stupidly simple use-your-own-energy strategy
 - Remove constraint that we cannot charge when discharging and vice versa
