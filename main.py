@@ -1,7 +1,7 @@
 import pandas as pd
 
 from tibber_insights.batteries.candidate_batteries import MAX_CAPACITY_TO_CONSIDER
-from tibber_insights.batteries.helper_functions import get_available_battery_packages
+from tibber_insights.batteries.battery_pack import BatteryPack, get_available_battery_packages
 from tibber_insights.data_loader import load_monthly_files
 from tibber_insights.constants import NET_HOUSEHOLD, SOC, EUR, CAPACITY, CHARGING_RATE, STRATEGY, BATTERY
 from tibber_insights.billing import forecast_2027_bill

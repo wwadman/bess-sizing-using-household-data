@@ -1,4 +1,4 @@
-from tibber_insights.batteries.models import Battery
+from tibber_insights.batteries.battery import Battery
 
 battery_types = [
     Battery('Marstek Venus A', capacity=10.6, charging_rate=1.2, rte=0.84, price=2575),
