@@ -1,4 +1,4 @@
-from tibber_insights.constants import BATTERY_PROPERTIES
+from tibber_insights.quantities import BATTERY_PROPERTIES
 import numpy as np
 
 class Battery:

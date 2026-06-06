@@ -1,6 +1,6 @@
 import pulp
-from .constants import (NET_BUY_PRICE, NET_SELL_PRICE, EXPECTED_CONSUMPTION, EXPECTED_PRODUCTION,
-                        CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID)
+from .quantities import (NET_BUY_PRICE, NET_SELL_PRICE, EXPECTED_CONSUMPTION, EXPECTED_PRODUCTION,
+                         CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID)
 
 
 def strategy_daily_lp(future_df, current_soc, battery):

@@ -1,14 +1,3 @@
-ENERGIEBELASTING = 0.09161  # €/kWh only when consuming
-INKOOPVERGOEDING = 0.0242  # €/kWh only when consuming
-VAT_RATE = 0.21  # 21% BTW
-
-# Units
-EUR = "€"
-KW = "kW"
-KWH = "kWh"
-EUR_KWH = f"{EUR}/{KWH}"
-
-
 class Quantity(str):
     def __new__(cls, label, unit):
         obj = super().__new__(cls, label)
@@ -17,6 +6,12 @@ class Quantity(str):
 
     def __reduce__(self):
         return (self.__class__, (str(self), self.unit))
+
+# Units
+EUR = "€"
+KW = "kW"
+KWH = "kWh"
+EUR_KWH = f"{EUR}/{KWH}"
 
 # Column names of original dataframe
 TIME = "Timestamp"  # Does not have a unit, so it is not a Quantity
