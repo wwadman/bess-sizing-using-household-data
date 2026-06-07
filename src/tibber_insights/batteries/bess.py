@@ -1,4 +1,4 @@
-from tibber_insights.quantities import BATTERY_PROPERTIES
+from tibber_insights.quantities import BESS_PROPERTIES
 import numpy as np
 
 class Bess:
@@ -14,11 +14,11 @@ class Bess:
         self.properties = [self.capacity, self.charging_rate, self.rte, self.price]
 
     def properties_to_long_string(self):
-        properties = [f"{PROP} = {val}{PROP.unit}" for (val, PROP) in zip(self.properties, BATTERY_PROPERTIES)]
+        properties = [f"{PROP} = {val}{PROP.unit}" for (val, PROP) in zip(self.properties, BESS_PROPERTIES)]
         return ", ".join(properties)
 
     def properties_to_short_string(self):
-        properties = [f"{val}{PROP.unit}" for (val, PROP) in zip(self.properties, BATTERY_PROPERTIES)]
+        properties = [f"{val}{PROP.unit}" for (val, PROP) in zip(self.properties, BESS_PROPERTIES)]
         return ", ".join(properties)
 
     def __str__(self):

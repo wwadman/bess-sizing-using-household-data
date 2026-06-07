@@ -34,9 +34,9 @@ DISCHARGE_TO_GRID = Quantity("Discharge to grid", KWH)
 SOC = Quantity("SOC", KWH)
 NET_BUY_PRICE = Quantity("Net buy price", EUR_KWH)
 NET_SELL_PRICE = Quantity("Net sell price", EUR_KWH)
-NET_HOUSEHOLD_WITH_BATTERY = Quantity("Net household incl. battery", KWH)
-COST_WO_BATTERY = Quantity("Cost w/o battery", EUR)
-COST_WITH_BATTERY = Quantity("Cost with battery", EUR)
+NET_HOUSEHOLD_WITH_BESS = Quantity("Net household incl. bess", KWH)
+COST_WO_BESS = Quantity("Cost w/o bess", EUR)
+COST_WITH_BESS = Quantity("Cost with bess", EUR)
 SAVINGS = Quantity("Savings", EUR)
 CUMULATIVE_SAVINGS_DAILY = Quantity("Cumulative savings (reset every midnight)", EUR)
 DAILY_SAVINGS_TOTAL = Quantity("Daily savings (plotted at 23:00)", EUR)
@@ -45,15 +45,15 @@ EXPECTED_MAX_CONSUMPTION = Quantity("Expected max consumption", KWH)
 
 # Quantities to filter above plots in dropdown menu
 STRATEGY = Quantity("Strategy", "")
-BATTERY = Quantity("Battery", "")
-DROPDOWN_QUANTITIES = [BATTERY, STRATEGY]
+BESS = Quantity("Bess", "")
+DROPDOWN_QUANTITIES = [BESS, STRATEGY]
 
-# Battery properties
+# BESS properties
 CAPACITY = Quantity("Capacity", KWH)
 CHARGING_RATE = Quantity("Charging rate", KW)
 RTE = Quantity("RTE", "")
 PRICE = Quantity("Price", EUR)
-BATTERY_PROPERTIES = [CAPACITY, CHARGING_RATE, RTE, PRICE]
+BESS_PROPERTIES = [CAPACITY, CHARGING_RATE, RTE, PRICE]
 
 
 if __name__ == "__main__":

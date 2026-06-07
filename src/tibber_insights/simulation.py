@@ -2,14 +2,14 @@ import pandas as pd
 from .quantities import (
     NET_HOUSEHOLD, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
     DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
-    SOC, COST_WO_BATTERY, COST_WITH_BATTERY, NET_BUY_PRICE, NET_SELL_PRICE, TIME,
+    SOC, COST_WO_BESS, COST_WITH_BESS, NET_BUY_PRICE, NET_SELL_PRICE, TIME,
     SAVINGS, CUMULATIVE_SAVINGS_DAILY, DAILY_SAVINGS_TOTAL,
-    NET_HOUSEHOLD_WITH_BATTERY, CONSUMPTION, PRODUCTION
+    NET_HOUSEHOLD_WITH_BESS, CONSUMPTION, PRODUCTION
 )
 
-def run_battery_simulation(sim_df, battery, strategy_fn):
+def run_bess_simulation(sim_df, bess, strategy_fn):
     sim_df = sim_df.copy()  # To avoid adding columns to the original DataFrame, for every strategy, rate and capacity
-    current_soc = battery.capacity/2  # Just to enable sanity-checking/debugging during the first TIME steps of the simulation
+    current_soc = bess.capacity/2  # Just to enable sanity-checking/debugging during the first TIME steps of the simulation
 
     simulation_logs = []
 
@@ -21,9 +21,9 @@ def run_battery_simulation(sim_df, battery, strategy_fn):
     
     for i in indices_14h:
         # Add a waitbar that fills up every n steps.
-        print(f"\rSimulation progress: {i}/{len(sim_df_indexed)}", end='', flush=True)
+        print(f"\rSimulating {bess}: {i}/{len(sim_df_indexed)}", end='', flush=True)
         future_df = sim_df.iloc[i:i + hours_from_2pm_till_next_midnight]
-        plan_df = strategy_fn(future_df=future_df, current_soc=current_soc, battery=battery)
+        plan_df = strategy_fn(future_df=future_df, current_soc=current_soc, bess=bess)
 
         # Execute 24 hours (or less if at the end of sim_df_indexed)
         steps_to_execute = min(24, len(sim_df_indexed) - i)
@@ -41,29 +41,29 @@ def run_battery_simulation(sim_df, battery, strategy_fn):
             dis_h = plan_df.iloc[t][DISCHARGE_TO_HOUSE]
             dis_g = plan_df.iloc[t][DISCHARGE_TO_GRID]
 
-            # Check all physical limits and battery constraints
+            # Check all physical limits and bess constraints
             charge = ch_h + ch_g
-            soc_charge_bump = charge * battery.efficiency_charging
+            soc_charge_bump = charge * bess.efficiency_charging
             discharge = dis_h + dis_g
-            soc_discharge_dip = discharge / battery.efficiency_discharging
+            soc_discharge_dip = discharge / bess.efficiency_discharging
 
             # 1. Total (dis)charge cannot exceed the max rate
             eps = 1e-4  # some margin to counter numerical errors
-            assert -eps <= soc_charge_bump <= battery.charging_rate + eps, \
-                f"Total charge {soc_charge_bump} should be between 0 and max rate {battery.charging_rate}"
-            assert -eps <= soc_discharge_dip <= battery.charging_rate + eps, \
-                f"Total discharge {soc_discharge_dip} should be between 0 and max rate {battery.charging_rate}"
+            assert -eps <= soc_charge_bump <= bess.charging_rate + eps, \
+                f"Total charge {soc_charge_bump} should be between 0 and max rate {bess.charging_rate}"
+            assert -eps <= soc_discharge_dip <= bess.charging_rate + eps, \
+                f"Total discharge {soc_discharge_dip} should be between 0 and max rate {bess.charging_rate}"
 
             # Update SOC for next time step and check if SOC is within limits
             current_soc = current_soc + soc_charge_bump - soc_discharge_dip
-            assert -eps <= current_soc <= battery.capacity + eps, \
-                f"Current SOC {current_soc} should be within [0, {battery.capacity}]."
+            assert -eps <= current_soc <= bess.capacity + eps, \
+                f"Current SOC {current_soc} should be within [0, {bess.capacity}]."
 
             cost_wo_batt = row_now[CONSUMPTION] * row_now[NET_BUY_PRICE] - row_now[PRODUCTION] * row_now[NET_SELL_PRICE]
 
             new_net_kwh = row_now[NET_HOUSEHOLD] + charge - discharge
-            battery_savings = (dis_h - ch_g) * row_now[NET_BUY_PRICE] + (dis_g - ch_h) * row_now[NET_SELL_PRICE]
-            cost_with_batt = cost_wo_batt - battery_savings
+            bess_savings = (dis_h - ch_g) * row_now[NET_BUY_PRICE] + (dis_g - ch_h) * row_now[NET_SELL_PRICE]
+            cost_with_batt = cost_wo_batt - bess_savings
 
             simulation_logs.append({
                 TIME: row_now[TIME],
@@ -72,14 +72,14 @@ def run_battery_simulation(sim_df, battery, strategy_fn):
                 CHARGE_FROM_GRID: ch_g,
                 DISCHARGE_TO_HOUSE: dis_h,
                 DISCHARGE_TO_GRID: dis_g,
-                NET_HOUSEHOLD_WITH_BATTERY: new_net_kwh,
-                COST_WO_BATTERY: cost_wo_batt,
-                COST_WITH_BATTERY: cost_with_batt
+                NET_HOUSEHOLD_WITH_BESS: new_net_kwh,
+                COST_WO_BESS: cost_wo_batt,
+                COST_WITH_BESS: cost_with_batt
             })
 
     df_logs = pd.DataFrame(simulation_logs)
     df_logs = df_logs.drop_duplicates(subset=[TIME], keep='first') # If 24h blocks overlap (they shouldn't if we step correctly, but just in case)
-    df_logs[SAVINGS] = df_logs[COST_WO_BATTERY] - df_logs[COST_WITH_BATTERY]
+    df_logs[SAVINGS] = df_logs[COST_WO_BESS] - df_logs[COST_WITH_BESS]
 
     # Calculate cumulative savings per day
     df_logs[CUMULATIVE_SAVINGS_DAILY] = df_logs.groupby(df_logs[TIME].dt.date)[SAVINGS].cumsum()

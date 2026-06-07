@@ -3,11 +3,11 @@ from .quantities import (NET_BUY_PRICE, NET_SELL_PRICE, EXPECTED_CONSUMPTION, EX
                          CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID)
 
 
-def strategy_daily_lp(future_df, current_soc, battery):
+def strategy_daily_lp(future_df, current_soc, bess):
     """
-    Optimizes battery behavior using Linear Programming (LP).
+    Optimizes bess behavior using Linear Programming (LP).
 
-    It maximizes net benefit over a future horizon, by modeling 4 different ways of battery monetization:
+    It maximizes net benefit over a future horizon, by modeling 4 different ways of bess monetization:
     - ch_h: Charge from House (solar) -> Opportunity cost: p_sell
     - ch_g: Charge from Grid -> Cost: p_buy
     - dis_h: Discharge to House -> Value: p_buy (avoided cost)
@@ -17,7 +17,7 @@ def strategy_daily_lp(future_df, current_soc, battery):
 
     # 1. Initialize the LP Problem
     # We use a maximization objective to maximize 'savings' or 'net benefit'
-    prob = pulp.LpProblem("Battery_Optimization", pulp.LpMaximize)
+    prob = pulp.LpProblem("BESS_Optimization", pulp.LpMaximize)
 
     # 2. Parameters (Inputs)
     p_buy = future_df[NET_BUY_PRICE].values
@@ -39,7 +39,7 @@ def strategy_daily_lp(future_df, current_soc, battery):
     # Binary variables to prevent simultaneous charging and discharging
     is_charging = [pulp.LpVariable(f"is_charging_{t}", cat=pulp.LpBinary) for t in range(horizon)]
 
-    soc = [pulp.LpVariable(f"soc_{t}", lowBound=0, upBound=battery.capacity) for t in range(horizon)]
+    soc = [pulp.LpVariable(f"soc_{t}", lowBound=0, upBound=bess.capacity) for t in range(horizon)]
 
     # 4. Objective Function
     benefit_terms = [
@@ -56,20 +56,20 @@ def strategy_daily_lp(future_df, current_soc, battery):
         # State of Charge Dynamics
         prev_soc = current_soc if t == 0 else soc[t-1]
         prob += (soc[t] == prev_soc
-                 + ch[t] * battery.efficiency_charging
-                 - dis[t] / battery.efficiency_discharging)
+                 + ch[t] * bess.efficiency_charging
+                 - dis[t] / bess.efficiency_discharging)
 
         # Rate of (dis)charge constraints with binary switch
-        prob += ch[t] * battery.efficiency_charging <= battery.charging_rate * is_charging[t]
-        prob += dis[t] / battery.efficiency_discharging <= battery.charging_rate * (1 - is_charging[t])
+        prob += ch[t] * bess.efficiency_charging <= bess.charging_rate * is_charging[t]
+        prob += dis[t] / bess.efficiency_discharging <= bess.charging_rate * (1 - is_charging[t])
 
         # Household Flow Boundaries
         prob += ch_h[t] <= e_prod[t]
         prob += dis_h[t] <= e_cons[t]
 
         # SOC limits
-        prob += ch[t] * battery.efficiency_charging <= battery.capacity - prev_soc
-        prob += dis[t] / battery.efficiency_discharging <= prev_soc
+        prob += ch[t] * bess.efficiency_charging <= bess.capacity - prev_soc
+        prob += dis[t] / bess.efficiency_discharging <= prev_soc
 
     # 6. Solve the problem
     # PULP_CBC_CMD is the default solver. We suppress output for speed.

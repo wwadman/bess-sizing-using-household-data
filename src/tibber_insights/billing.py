@@ -23,7 +23,7 @@ def forecast_2027_bill(df):
 
     header_width = 50
     print("\n" + "╔" + "═" * (header_width - 2) + "╗")
-    print(f"║ {'2027 ENERGY BILL FORECAST (no battery)':^{header_width - 4}} ║")
+    print(f"║ {'2027 ENERGY BILL FORECAST (no bess)':^{header_width - 4}} ║")
     print("╠" + "═" * (header_width - 2) + "╣")
     print(f"║ Period: {forecast['period_days']:3d} days profile extrapolated to year  ║")
     print("╟" + "─" * (header_width - 2) + "╢")

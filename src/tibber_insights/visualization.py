@@ -3,22 +3,22 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from .quantities import (
     NET_HOUSEHOLD, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
-    SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BATTERY, COST_WITH_BATTERY,
+    SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BESS, COST_WITH_BESS,
     EUR, KW, KWH, TIME, CUMULATIVE_SAVINGS_DAILY, DAILY_SAVINGS_TOTAL,
-    NET_HOUSEHOLD_WITH_BATTERY,
-    CAPACITY, CHARGING_RATE, STRATEGY, BATTERY, DROPDOWN_QUANTITIES
+    NET_HOUSEHOLD_WITH_BESS,
+    CAPACITY, CHARGING_RATE, STRATEGY, BESS, DROPDOWN_QUANTITIES
 )
 
 
-def plot_interactive_battery_behavior(battery_behavior, strategies, days=10):
+def plot_interactive_bess_behavior(bess_behavior, strategies, days=10):
     """
-    Creates an interactive Plotly figure with 4 subplots showing battery behavior over time.
+    Creates an interactive Plotly figure with 4 subplots showing bess behavior over time.
     
     The plot includes three independent dropdown menus at the top to filter simulation
     results by Capacity, Charging Rate, and Strategy.
 
     Args:
-        battery_behavior (dict): A dict with Battery instances as keys, and
+        bess_behavior (dict): A dict with Bess instances as keys, and
             values are dicts with strategy names as keys and sim_df as values.
         strategies (list): List of strategy names to include in the dropdown.
         days (int, optional): The number of days to show by default (zoomed in).
@@ -28,18 +28,18 @@ def plot_interactive_battery_behavior(battery_behavior, strategies, days=10):
     # Create all stuff that does not change when toggling anything from the dropdowns
     fig = _create_base_figure()
     # To get the base layout and shared traces (like prices), just take the first sim_df
-    first_battery = list(battery_behavior.keys())[0]
-    first_strategy = list(battery_behavior[first_battery].keys())[0]
-    first_df = battery_behavior[first_battery][first_strategy]
+    first_bess = list(bess_behavior.keys())[0]
+    first_strategy = list(bess_behavior[first_bess].keys())[0]
+    first_df = bess_behavior[first_bess][first_strategy]
     common_trace_indices = _add_common_traces(fig, first_df)
     for idx in common_trace_indices:
         fig.data[idx].visible = True  # Set initial visible
 
     # Create all stuff that does change when toggling anything from the dropdowns
-    trace_groups = _add_result_traces(fig, battery_behavior)
+    trace_groups = _add_result_traces(fig, bess_behavior)
     for idx in trace_groups[0]['indices']:
         fig.data[idx].visible = True  # Show by default the first group from dropdown menu
-    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_behavior, strategies)
+    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavior, strategies)
 
     _polish_layout(fig, first_df, days)
 
@@ -124,7 +124,7 @@ def _add_common_traces(fig, first_df):
         _add_interactive_trace(fig, 3, NET_BUY_PRICE, first_df, line=dict(color='firebrick'), legendgroup='prices'),
         _add_interactive_trace(fig, 3, NET_SELL_PRICE, first_df, line=dict(color='darkseagreen'), legendgroup='prices'),
         _add_interactive_trace(fig, 2, NET_HOUSEHOLD, first_df, line=dict(color='grey', dash='dash'), legendgroup='net_household'),
-        _add_interactive_trace(fig, 4, COST_WO_BATTERY, first_df, line=dict(color='gray', dash='dash'), legendgroup='costs'),
+        _add_interactive_trace(fig, 4, COST_WO_BESS, first_df, line=dict(color='gray', dash='dash'), legendgroup='costs'),
     ]
     # Add horizontal lines (static)
     fig.add_hline(y=0, line_width=1, line_dash="dot", line_color="grey", row=2, col=1)
@@ -132,7 +132,7 @@ def _add_common_traces(fig, first_df):
     return indices
 
 
-def _add_result_traces(fig, battery_behavior):
+def _add_result_traces(fig, bess_behavior):
     """
     Adds all simulation-specific traces to the figure, initially hidden.
 
@@ -141,36 +141,36 @@ def _add_result_traces(fig, battery_behavior):
 
     Args:
         fig (plotly.graph_objects.Figure): The figure to add traces to.
-        battery_behavior (dict): The nested dict of results.
+        bess_behavior (dict): The nested dict of results.
 
     Returns:
         list[dict]: A list of trace groups, each containing metadata and the
             indices of its associated traces in `fig.data`.
     """
     trace_groups = []
-    for battery, strategies_dict in battery_behavior.items():
+    for bess, strategies_dict in bess_behavior.items():
         for strategy_name, df in strategies_dict.items():
             group_indices = [
                 _add_interactive_trace(fig, 1, SOC, df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
-                _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BATTERY, df, visible=False, line=dict(color='black'), legendgroup='net_household'),
+                _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BESS, df, visible=False, line=dict(color='black'), legendgroup='net_household'),
                 _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df, visible=False, trace_type=go.Bar, marker_color='darkseagreen', legendgroup='charge'),
                 _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
                 _add_interactive_trace(fig, 2, DISCHARGE_TO_HOUSE, df, swap=True, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
                 _add_interactive_trace(fig, 2, DISCHARGE_TO_GRID, df, swap=True, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
-                _add_interactive_trace(fig, 4, COST_WITH_BATTERY, df, visible=False, line=dict(color='indigo'), legendgroup='costs'),
+                _add_interactive_trace(fig, 4, COST_WITH_BESS, df, visible=False, line=dict(color='indigo'), legendgroup='costs'),
                 _add_interactive_trace(fig, 4, CUMULATIVE_SAVINGS_DAILY, df, visible=False, trace_type=go.Bar, opacity=0.5, marker_color='orange', legendgroup='savings'),
                 _add_interactive_trace(fig, 4, DAILY_SAVINGS_TOTAL, df, visible=False, trace_type=go.Bar, opacity=1.0, marker_color='darkorange', legendgroup='savings'),
             ]
             group = {
                 'indices': group_indices,
-                BATTERY: battery,
+                BESS: bess,
                 STRATEGY: strategy_name
             }
             trace_groups.append(group)
     return trace_groups
 
 
-def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_behavior, strategies):
+def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavior, strategies):
     """
     Constructs the Plotly updatemenus for Capacity, Charging Rate, and Strategy.
 
@@ -178,7 +178,7 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_beha
         fig (plotly.graph_objects.Figure): The figure to apply the menus to.
         common_trace_indices (list[int]): Indices of traces that should always be visible.
         trace_groups (list[dict]): Metadata and indices for each simulation configuration.
-        battery_behavior (dict): The nested dict of results.
+        bess_behavior (dict): The nested dict of results.
 
     Returns:
         list[dict]: A list of Plotly updatemenu configurations.
@@ -188,8 +188,8 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_beha
         for idx in common_trace_indices:
             vis[idx] = True
         for group in trace_groups:
-            if dim_key == BATTERY:
-                if group[BATTERY].name == value:
+            if dim_key == BESS:
+                if group[BESS].name == value:
                     for idx in group['indices']:
                         vis[idx] = True
             elif group[dim_key] == value:
@@ -198,17 +198,17 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_beha
         return vis
 
     update_menus = []
-    x_positions = {BATTERY: 0.35, STRATEGY: 0.75}
+    x_positions = {BESS: 0.35, STRATEGY: 0.75}
 
     # Define button groups
     button_groups = [
-        (BATTERY, battery_behavior.keys()),
+        (BESS, bess_behavior.keys()),
         (STRATEGY, strategies.keys())
     ]
     for dim_key, options in button_groups:
         buttons = []
         for opt in options:
-            if dim_key == BATTERY:
+            if dim_key == BESS:
                 label = f"{opt.name}: {opt.properties_to_short_string()}"
                 value = opt.name
             else:
@@ -244,7 +244,7 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, battery_beha
     return fig
 
 
-def plot_battery_savings_surface(results_df, strategy_name, rates, capacities):
+def plot_bess_savings_surface(results_df, strategy_name, rates, capacities):
     """
     Creates a 3D surface plot showing annual savings vs. capacity and rate.
 
