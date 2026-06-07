@@ -122,4 +122,8 @@ def main():
                 plot_battery_savings_surface(plot_df, strategy_name, rates, capacities)
 
 if __name__ == "__main__":
+    # Print simulation start time
+    print(f"Simulation started at {pd.Timestamp.now()}")
     main()
+    # Print simulation end time
+    print(f"Simulation ended at {pd.Timestamp.now()}")
