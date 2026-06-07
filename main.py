@@ -1,7 +1,7 @@
 import pandas as pd
 
-from tibber_insights.batteries.candidate_batteries import MAX_CAPACITY_TO_CONSIDER
-from tibber_insights.batteries.battery_pack import get_available_battery_packages
+from tibber_insights.batteries.bess_candidates import bess_candidates
+# from tibber_insights.batteries.battery_pack import get_available_battery_packages
 from tibber_insights.data_loader import load_monthly_files
 from tibber_insights.quantities import NET_HOUSEHOLD, SOC, EUR, CAPACITY, CHARGING_RATE, STRATEGY, BATTERY
 from tibber_insights.billing import forecast_2027_bill
@@ -27,18 +27,18 @@ def main():
 
     # -- 2027 bill forecast --------------------------------------------------------
     forecast = forecast_2027_bill(df)
-
-    # -- Battery simulation --------------------------------------------------------
-    battery_packs = get_available_battery_packages(max_capacity_to_consider=MAX_CAPACITY_TO_CONSIDER)
-
     baseline_bill = forecast['net_bill_2027_eur']
 
-    strategies = {"Daily linear optimization": strategy_daily_lp}
+    print("We will run the battery simulation with the following candidate besses:")
+    for bess in bess_candidates:
+        print(bess, " --- ", bess.properties_to_long_string())
 
+    strategies = {"Daily cost optimization": strategy_daily_lp}
+
+    # -- Battery simulation --------------------------------------------------------
     sim_results = []
     battery_behavior = {}
-
-    for battery in battery_packs:
+    for battery in bess_candidates:
         battery_behavior[battery] = {}
         for strategy_name, strategy_fn in strategies.items():
             sim_df = run_battery_simulation(sim_df=df, battery=battery, strategy_fn=strategy_fn)

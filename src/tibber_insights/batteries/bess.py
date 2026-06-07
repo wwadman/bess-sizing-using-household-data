@@ -1,7 +1,7 @@
 from tibber_insights.quantities import BATTERY_PROPERTIES
 import numpy as np
 
-class Battery:
+class Bess:
     def __init__(self, name, capacity, charging_rate, rte, price):
         self.name = name
         self.capacity = capacity
