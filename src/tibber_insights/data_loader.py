@@ -47,7 +47,7 @@ def load_monthly_files(pattern="csv/data-*.csv"):
 
     # Focus all analysis on the very last 365 * 24 hours
     recent_hours = sorted(df[TIME].unique())[-365 * 24:]
-    # recent_hours = sorted(df[TIME].unique())[-300 * 24: -250 * 24]  # for debugging
+    recent_hours = sorted(df[TIME].unique())[-300 * 24: -250 * 24]
     df = df[df[TIME].isin(recent_hours)].copy()
 
     return df

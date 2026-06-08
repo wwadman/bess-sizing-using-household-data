@@ -4,10 +4,10 @@ from .quantities import (
     DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, COST_WO_BESS, COST_WITH_BESS, NET_BUY_PRICE, NET_SELL_PRICE, TIME,
     SAVINGS, CUMULATIVE_SAVINGS_DAILY, DAILY_SAVINGS_TOTAL,
-    NET_HOUSEHOLD_WITH_BESS, CONSUMPTION, PRODUCTION
+    NET_HOUSEHOLD_WITH_BESS, CONSUMPTION, PRODUCTION, ANNUAL_SAVINGS, PROFIT_AFTER_10_YEARS, PAYBACK_PERIOD
 )
 
-def run_bess_simulation(sim_df, bess, strategy_fn):
+def simulate(sim_df, bess, strategy_fn):
     sim_df = sim_df.copy()  # To avoid adding columns to the original DataFrame, for every strategy, rate and capacity
     current_soc = bess.capacity/2  # Just to enable sanity-checking/debugging during the first TIME steps of the simulation
 
@@ -91,3 +91,22 @@ def run_bess_simulation(sim_df, bess, strategy_fn):
 
     sim_df = sim_df.merge(df_logs, on=TIME, how="left", suffixes=("", "_logged"))
     return sim_df
+
+
+def compute_savings_stats(sim_df, bess_price):
+    savings = sim_df.Savings.sum()
+    n_steps_with_savings_simulated = sim_df.Savings.notna().sum()
+    n_years_with_savings_simulated = n_steps_with_savings_simulated / 24 / 365  # Assuming hourly time steps
+    if 0.05 < n_years_with_savings_simulated % 1 < 0.95:
+        print(f'WARNING: period of simulated savings ({n_years_with_savings_simulated:.2f} years) '
+              f'is not close to a whole number of years. '
+              f'Therefore seasonality might significantly affect the payback period estimate...!')
+    annual_savings = savings / n_years_with_savings_simulated
+    payback_period = bess_price / annual_savings
+    profit_after_10_years = annual_savings * 10 - bess_price
+
+    stats = {ANNUAL_SAVINGS: annual_savings,
+             PROFIT_AFTER_10_YEARS: profit_after_10_years,
+             PAYBACK_PERIOD: payback_period,
+             }
+    return stats

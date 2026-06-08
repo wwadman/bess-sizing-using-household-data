@@ -2,15 +2,15 @@ import pandas as pd
 
 from tibber_insights.batteries.bess_candidates import bess_candidates
 from tibber_insights.data_loader import load_monthly_files
-from tibber_insights.quantities import NET_HOUSEHOLD, SOC, EUR, CAPACITY, CHARGING_RATE, STRATEGY, BESS
+from tibber_insights.quantities import NET_HOUSEHOLD, SOC, EUR, CAPACITY, CHARGING_RATE, BESS, ANNUAL_SAVINGS, \
+    PAYBACK_PERIOD, PROFIT_AFTER_10_YEARS, RTE
 from tibber_insights.billing import forecast_2027_bill
-from tibber_insights.simulation import run_bess_simulation
-from tibber_insights.strategies import strategy_daily_lp
+from tibber_insights.simulation import simulate, compute_savings_stats
 from tibber_insights.visualization import plot_bess_savings_surface, plot_interactive_bess_behavior
 
 
 PLOT = False
-SANITY_CHECK = True
+DEBUG = True
 
 def main():
     pd.set_option(
@@ -30,31 +30,25 @@ def main():
 
     print("We will run the bess simulation with the following candidate besses:")
     for bess in bess_candidates:
-        print(bess, " --- ", bess.properties_to_long_string())
-
-    strategies = {"Daily cost optimization": strategy_daily_lp}
+        print(bess, " | ", bess.properties_to_long_string(), " | ", bess.strategy)
 
     # -- BESS simulation --------------------------------------------------------
     sim_results = []
     bess_behavior = {}
+    savings_stats = {}
     for bess in bess_candidates:
-        bess_behavior[bess] = {}
-        for strategy_name, strategy_fn in strategies.items():
-            sim_df = run_bess_simulation(sim_df=df, bess=bess, strategy_fn=strategy_fn)
-            savings = sim_df.Savings.sum()
+        sim_df = simulate(sim_df=df, bess=bess, strategy_fn=bess.strategy)
 
-            if SANITY_CHECK:
-                bess_behavior[bess][strategy_name] = sim_df
+        bess_behavior[bess] = sim_df
+        stats = compute_savings_stats(sim_df, bess.price)
+        savings_stats[bess] = stats
 
-            sim_results.append({
-                BESS: bess,
-                STRATEGY: strategy_name,
-                'annual_savings_eur': savings,
-                'net_bill_eur': baseline_bill - savings,
-                'savings_pct': savings / baseline_bill * 100,
-            })
+        sim_results.append({
+            BESS: bess,
+            **stats,
+        })
 
-    plot_interactive_bess_behavior(bess_behavior, strategies, days=10)
+    plot_interactive_bess_behavior(bess_behavior, savings_stats, days=10)
 
     results_df = pd.DataFrame(sim_results)
 
@@ -62,15 +56,15 @@ def main():
     print(f"║ {'BESS SIMULATION RESULTS (2027)':^86} ║")
     print("╠" + "═" * 88 + "╣")
 
-    display_df = results_df.sort_values([STRATEGY, 'annual_savings_eur'], ascending=[True, False])
+    display_df = results_df.sort_values(ANNUAL_SAVINGS, ascending=False)
     display_df[CAPACITY] = display_df[BESS].apply(lambda b: b.capacity)
     display_df[CHARGING_RATE] = display_df[BESS].apply(lambda b: b.charging_rate)
+    display_df[RTE] = display_df[BESS].apply(lambda b: b.rte)
     display_df[BESS] = display_df[BESS].apply(lambda b: b.name)
 
-    display_df = display_df[[BESS, STRATEGY, CAPACITY, CHARGING_RATE, 'annual_savings_eur', 'net_bill_eur', 'savings_pct']]
 
-    # Rename columns for prettier display
-    # display_df.columns = ['Strategy', f'Cap ({SOC.unit})', f'Rate ({NET_HOUSEHOLD.unit})', f'Savings ({EUR})', f'Net Bill ({EUR})', 'Savings %']
+    display_df = display_df[[BESS, CAPACITY, CHARGING_RATE, RTE,
+                             ANNUAL_SAVINGS, PAYBACK_PERIOD, PROFIT_AFTER_10_YEARS]]
 
     sim_table = display_df.to_string(index=False, justify='center', formatters={
         f'Cap ({SOC.unit})': '{:.1f}'.format,
@@ -84,41 +78,17 @@ def main():
     print("╚" + "═" * 88 + "╝")
 
     if not results_df.empty:
-        best_by_strategy = (
-            results_df.loc[results_df.groupby(STRATEGY)['annual_savings_eur'].idxmax()]
-            .sort_values('annual_savings_eur', ascending=False)
-        )
-        best_by_strategy[CAPACITY] = best_by_strategy[BESS].apply(lambda b: b.capacity)
-        best_by_strategy[CHARGING_RATE] = best_by_strategy[BESS].apply(lambda b: b.charging_rate)
-
-        print("\n" + "╔" + "═" * 88 + "╗")
-        print(f"║ {'🏆 BEST CONFIGURATION PER STRATEGY':^86}║")
-        print("╠" + "═" * 88 + "╣")
-
-        best_display = best_by_strategy[[STRATEGY, CAPACITY, CHARGING_RATE, 'annual_savings_eur', 'savings_pct', 'net_bill_eur']]
-        best_display.columns = ['Strategy', f'Cap ({SOC.unit})', f'Rate ({NET_HOUSEHOLD.unit})', f'Savings ({EUR})', 'Savings %', f'Net Bill ({EUR})']
-
-        best_table = best_display.to_string(index=False, justify='center', formatters={
-            f'Cap ({SOC.unit})': '{:.1f}'.format,
-            f'Rate ({NET_HOUSEHOLD.unit})': '{:.1f}'.format,
-            f'Savings ({EUR})': '{:,.2f}'.format,
-            f'Net Bill ({EUR})': '{:,.2f}'.format,
-            'Savings %': '{:.1f}%'.format,
-        })
-        for line in best_table.split('\n'):
-            print(f"║ {line:^86} ║")
-        print("╚" + "═" * 88 + "╝")
-
-        # -- Surface plots per strategy ------------------------------------------------
+        best_bess = results_df.loc[results_df[ANNUAL_SAVINGS].idxmax()]
+        
+        # -- Surface plots ------------------------------------------------
         if PLOT:
             rates = sorted(list(set(res[BESS].charging_rate for res in sim_results)))
             capacities = sorted(list(set(res[BESS].capacity for res in sim_results)))
-            for strategy_name in strategies.keys():
-                # We need to adapt results_df for plot_bess_savings_surface if it expects CAPACITY/CHARGING_RATE columns
-                plot_df = results_df.copy()
-                plot_df[CAPACITY] = plot_df[BESS].apply(lambda b: b.capacity)
-                plot_df[CHARGING_RATE] = plot_df[BESS].apply(lambda b: b.charging_rate)
-                plot_bess_savings_surface(plot_df, strategy_name, rates, capacities)
+            
+            plot_df = results_df.copy()
+            plot_df[CAPACITY] = plot_df[BESS].apply(lambda b: b.capacity)
+            plot_df[CHARGING_RATE] = plot_df[BESS].apply(lambda b: b.charging_rate)
+            plot_bess_savings_surface(plot_df, rates, capacities)
 
 if __name__ == "__main__":
     # Print simulation start time

@@ -1,4 +1,6 @@
 from tibber_insights.batteries.bess import Bess
+from tibber_insights.strategies import maximize_profit_daily
+
 
 class BessType():
     def __init__(self,
@@ -7,7 +9,8 @@ class BessType():
                  capacities: list,
                  charging_rates: list,
                  rtes: list,
-                 prices: list):
+                 prices: list,
+                 strategy=maximize_profit_daily):
         self.name = name
         self.extension_name = extension_name
         assert len(capacities) == len(charging_rates) == len(rtes) == len(prices), \
@@ -16,11 +19,14 @@ class BessType():
         self.charging_rate = charging_rates
         self.rtes = rtes
         self.prices = prices
+        if not type(strategy) is list:
+            self.strategy = [strategy] * len(capacities)
 
     def get_all_possible_besses_of_this_type(self):
         names = [f"{self.name} + {i}x {self.extension_name}" for i in range(len(self.capacities))]
-        return [Bess(name=name, capacity=capacity, charging_rate=charging_rate, rte=rte, price=price)
-                for name, capacity, charging_rate, rte, price in zip(names, self.capacities, self.charging_rate, self.rtes, self.prices)]
+        return [Bess(name, capacity, charging_rate, rte, price, strategy)
+                for name, capacity, charging_rate, rte, price, strategy
+                in zip(names, self.capacities, self.charging_rate, self.rtes, self.prices, self.strategy)]
 
 
 if __name__ == "__main__":

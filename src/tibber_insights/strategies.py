@@ -3,7 +3,7 @@ from .quantities import (NET_BUY_PRICE, NET_SELL_PRICE, EXPECTED_CONSUMPTION, EX
                          CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID)
 
 
-def strategy_daily_lp(future_df, current_soc, bess):
+def maximize_profit_daily(future_df, current_soc, bess):
     """
     Optimizes bess behavior using Linear Programming (LP).
 

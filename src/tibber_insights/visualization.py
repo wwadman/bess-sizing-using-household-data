@@ -6,21 +6,22 @@ from .quantities import (
     SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BESS, COST_WITH_BESS,
     EUR, KW, KWH, TIME, CUMULATIVE_SAVINGS_DAILY, DAILY_SAVINGS_TOTAL,
     NET_HOUSEHOLD_WITH_BESS,
-    CAPACITY, CHARGING_RATE, STRATEGY, BESS, DROPDOWN_QUANTITIES
+    CAPACITY, CHARGING_RATE, BESS, DROPDOWN_QUANTITIES, ANNUAL_SAVINGS
 )
 
 
-def plot_interactive_bess_behavior(bess_behavior, strategies, days=10):
+def plot_interactive_bess_behavior(bess_behavior, savings_stats, days=10):
     """
     Creates an interactive Plotly figure with 4 subplots showing bess behavior over time.
     
-    The plot includes three independent dropdown menus at the top to filter simulation
-    results by Capacity, Charging Rate, and Strategy.
+    The plot includes one dropdown menu at the top to filter simulation
+    results by Bess configuration.
 
     Args:
         bess_behavior (dict): A dict with Bess instances as keys, and
-            values are dicts with strategy names as keys and sim_df as values.
-        strategies (list): List of strategy names to include in the dropdown.
+            sim_df as values.
+        savings_stats (dict): A dict with Bess instances as keys, and
+            stats as values.
         days (int, optional): The number of days to show by default (zoomed in).
             Defaults to 10.
     """
@@ -29,8 +30,7 @@ def plot_interactive_bess_behavior(bess_behavior, strategies, days=10):
     fig = _create_base_figure()
     # To get the base layout and shared traces (like prices), just take the first sim_df
     first_bess = list(bess_behavior.keys())[0]
-    first_strategy = list(bess_behavior[first_bess].keys())[0]
-    first_df = bess_behavior[first_bess][first_strategy]
+    first_df = bess_behavior[first_bess]
     common_trace_indices = _add_common_traces(fig, first_df)
     for idx in common_trace_indices:
         fig.data[idx].visible = True  # Set initial visible
@@ -39,7 +39,7 @@ def plot_interactive_bess_behavior(bess_behavior, strategies, days=10):
     trace_groups = _add_result_traces(fig, bess_behavior)
     for idx in trace_groups[0]['indices']:
         fig.data[idx].visible = True  # Show by default the first group from dropdown menu
-    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavior, strategies)
+    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavior)
 
     _polish_layout(fig, first_df, days)
 
@@ -141,94 +141,73 @@ def _add_result_traces(fig, bess_behavior):
 
     Args:
         fig (plotly.graph_objects.Figure): The figure to add traces to.
-        bess_behavior (dict): The nested dict of results.
+        bess_behavior (dict): The dict of results mapping Bess to sim_df.
 
     Returns:
         list[dict]: A list of trace groups, each containing metadata and the
             indices of its associated traces in `fig.data`.
     """
     trace_groups = []
-    for bess, strategies_dict in bess_behavior.items():
-        for strategy_name, df in strategies_dict.items():
-            group_indices = [
-                _add_interactive_trace(fig, 1, SOC, df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
-                _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BESS, df, visible=False, line=dict(color='black'), legendgroup='net_household'),
-                _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df, visible=False, trace_type=go.Bar, marker_color='darkseagreen', legendgroup='charge'),
-                _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
-                _add_interactive_trace(fig, 2, DISCHARGE_TO_HOUSE, df, swap=True, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
-                _add_interactive_trace(fig, 2, DISCHARGE_TO_GRID, df, swap=True, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
-                _add_interactive_trace(fig, 4, COST_WITH_BESS, df, visible=False, line=dict(color='indigo'), legendgroup='costs'),
-                _add_interactive_trace(fig, 4, CUMULATIVE_SAVINGS_DAILY, df, visible=False, trace_type=go.Bar, opacity=0.5, marker_color='orange', legendgroup='savings'),
-                _add_interactive_trace(fig, 4, DAILY_SAVINGS_TOTAL, df, visible=False, trace_type=go.Bar, opacity=1.0, marker_color='darkorange', legendgroup='savings'),
-            ]
-            group = {
-                'indices': group_indices,
-                BESS: bess,
-                STRATEGY: strategy_name
-            }
-            trace_groups.append(group)
+    for bess, df in bess_behavior.items():
+        group_indices = [
+            _add_interactive_trace(fig, 1, SOC, df, visible=False, line=dict(color='royalblue'), fill='tozeroy', showlegend=False),
+            _add_interactive_trace(fig, 2, NET_HOUSEHOLD_WITH_BESS, df, visible=False, line=dict(color='black'), legendgroup='net_household'),
+            _add_interactive_trace(fig, 2, CHARGE_FROM_HOUSE, df, visible=False, trace_type=go.Bar, marker_color='darkseagreen', legendgroup='charge'),
+            _add_interactive_trace(fig, 2, CHARGE_FROM_GRID, df, visible=False, trace_type=go.Bar, marker_color='forestgreen', legendgroup='charge'),
+            _add_interactive_trace(fig, 2, DISCHARGE_TO_HOUSE, df, swap=True, visible=False, trace_type=go.Bar, marker_color='firebrick', legendgroup='discharge'),
+            _add_interactive_trace(fig, 2, DISCHARGE_TO_GRID, df, swap=True, visible=False, trace_type=go.Bar, marker_color='salmon', legendgroup='discharge'),
+            _add_interactive_trace(fig, 4, COST_WITH_BESS, df, visible=False, line=dict(color='indigo'), legendgroup='costs'),
+            _add_interactive_trace(fig, 4, CUMULATIVE_SAVINGS_DAILY, df, visible=False, trace_type=go.Bar, opacity=0.5, marker_color='orange', legendgroup='savings'),
+            _add_interactive_trace(fig, 4, DAILY_SAVINGS_TOTAL, df, visible=False, trace_type=go.Bar, opacity=1.0, marker_color='darkorange', legendgroup='savings'),
+        ]
+        group = {
+            'indices': group_indices,
+            BESS: bess
+        }
+        trace_groups.append(group)
     return trace_groups
 
 
-def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavior, strategies):
+def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavior):
     """
-    Constructs the Plotly updatemenus for Capacity, Charging Rate, and Strategy.
+    Constructs the Plotly updatemenus for BESS configuration.
 
     Args:
         fig (plotly.graph_objects.Figure): The figure to apply the menus to.
         common_trace_indices (list[int]): Indices of traces that should always be visible.
         trace_groups (list[dict]): Metadata and indices for each simulation configuration.
-        bess_behavior (dict): The nested dict of results.
+        bess_behavior (dict): The dict of results.
 
     Returns:
         list[dict]: A list of Plotly updatemenu configurations.
     """
-    def get_visibility_filter(dim_key, value):
+    def get_visibility_filter(value):
         vis = [False] * len(fig.data)
         for idx in common_trace_indices:
             vis[idx] = True
         for group in trace_groups:
-            if dim_key == BESS:
-                if group[BESS].name == value:
-                    for idx in group['indices']:
-                        vis[idx] = True
-            elif group[dim_key] == value:
+            if group[BESS].name == value:
                 for idx in group['indices']:
                     vis[idx] = True
         return vis
 
-    update_menus = []
-    x_positions = {BESS: 0.35, STRATEGY: 0.75}
-
-    # Define button groups
-    button_groups = [
-        (BESS, bess_behavior.keys()),
-        (STRATEGY, strategies.keys())
-    ]
-    for dim_key, options in button_groups:
-        buttons = []
-        for opt in options:
-            if dim_key == BESS:
-                label = f"{opt.name}: {opt.properties_to_short_string()}"
-                value = opt.name
-            else:
-                label = f"{STRATEGY}: {opt}"
-                value = opt
-
-            buttons.append(dict(
-                method="update",
-                label=label,
-                args=[{"visible": get_visibility_filter(dim_key, value)}]
-            ))
-
-        update_menus.append(dict(
-            buttons=buttons,
-            direction="down",
-            showactive=True,
-            x=x_positions[dim_key], xanchor="center",
-            y=1.15, yanchor="top",
-            font=dict(size=14, family="Courier New, monospace")
+    buttons = []
+    for bess in bess_behavior.keys():
+        label = f"{bess.name}: {bess.properties_to_short_string()}"
+        buttons.append(dict(
+            method="update",
+            label=label,
+            args=[{"visible": get_visibility_filter(bess.name)}]
         ))
+
+    update_menus = [dict(
+        buttons=buttons,
+        direction="down",
+        showactive=True,
+        x=0.5, xanchor="center",
+        y=1.15, yanchor="top",
+        font=dict(size=14, family="Courier New, monospace")
+    )]
 
     fig.update_layout(
         updatemenus=update_menus,
@@ -244,18 +223,17 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavio
     return fig
 
 
-def plot_bess_savings_surface(results_df, strategy_name, rates, capacities):
+def plot_bess_savings_surface(results_df, rates, capacities):
     """
     Creates a 3D surface plot showing annual savings vs. capacity and rate.
 
     Args:
         results_df (pd.DataFrame): The aggregated simulation results.
-        strategy_name (str): The name of the strategy to visualize.
         rates (list): The charging rates to display on the X-axis.
         capacities (list): The capacities to display on the Y-axis.
     """
-    pivot = results_df[results_df[STRATEGY] == strategy_name] \
-        .pivot(index=CAPACITY, columns=CHARGING_RATE, values='annual_savings_eur') \
+    pivot = results_df \
+        .pivot(index=CAPACITY, columns=CHARGING_RATE, values=ANNUAL_SAVINGS) \
         .fillna(0)
 
     fig = go.Figure(data=[go.Surface(
@@ -266,7 +244,7 @@ def plot_bess_savings_surface(results_df, strategy_name, rates, capacities):
     )])
 
     fig.update_layout(
-        title=f'Annual Savings vs Capacity & Rate (Strategy: {strategy_name})',
+        title=f'Annual Savings vs Capacity & Rate',
         scene=dict(
             xaxis=dict(title=f'Rate ({KW})', tickvals=rates),
             yaxis=dict(title=f'Capacity ({KWH})', tickvals=capacities),

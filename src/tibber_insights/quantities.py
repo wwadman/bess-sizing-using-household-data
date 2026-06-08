@@ -44,9 +44,8 @@ NET_VALUE = Quantity("Net value", EUR)
 EXPECTED_MAX_CONSUMPTION = Quantity("Expected max consumption", KWH)
 
 # Quantities to filter above plots in dropdown menu
-STRATEGY = Quantity("Strategy", "")
 BESS = Quantity("Bess", "")
-DROPDOWN_QUANTITIES = [BESS, STRATEGY]
+DROPDOWN_QUANTITIES = [BESS]
 
 # BESS properties
 CAPACITY = Quantity("Capacity", KWH)
@@ -54,6 +53,11 @@ CHARGING_RATE = Quantity("Charging rate", KW)
 RTE = Quantity("RTE", "")
 PRICE = Quantity("Price", EUR)
 BESS_PROPERTIES = [CAPACITY, CHARGING_RATE, RTE, PRICE]
+
+# Savings stats:
+ANNUAL_SAVINGS = Quantity("Annual savings", EUR)
+PAYBACK_PERIOD = Quantity("Payback period", "years")
+PROFIT_AFTER_10_YEARS = Quantity("Profit after 10 years", EUR)
 
 
 if __name__ == "__main__":
