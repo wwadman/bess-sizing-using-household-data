@@ -60,13 +60,14 @@ def check_hour_coverage(df):
     some_production  = df[PRODUCTION] > 0
     no_production    = df[PRODUCTION] == 0
 
-    all_covered = (
+    all_covered = len(df) == (
           len(df[some_consumption & some_production])
         + len(df[some_consumption &   no_production])
         + len(df[  no_consumption &   no_production])
         + len(df[  no_consumption & some_production])
-    ) == len(df)
+    )
     assert all_covered, "Not all hours are covered!"
+
 
 def clean_unit_prices(df):
     """Calculate net price based on unit price and side (buy/sell).
@@ -80,8 +81,8 @@ def clean_unit_prices(df):
     Note:
     Until start of 2026 Tibber df[CONSUMPTION_UNIT_PRICE_EUR] == df[PRODUCTION_UNIT_PRICE_EUR]
     From start of 2026 Tibber df[CONSUMPTION_UNIT_PRICE_EUR] == df[PRODUCTION_UNIT_PRICE_EUR] + INKOOPVERGOEDING
-    This is super confusing, since we want to mimic 2027 onwards, which has IV for consumption only,
-    so we will use only the PRODUCTION_UNIT_PRICE_EUR and add the IV (and EB and BTW) to get the consumption_unit_price_eur_net
+    This is super confusing, since we want to mimic 2027 onwards, which has INKOOPVERGOEDING (IV) for consumption only,
+    so we will use only the PRODUCTION_UNIT_PRICE_EUR and add IV (and EB and BTW) to get the CONSUMPTION_UNIT_PRICE_EUR
     """
     df[UNIT_PRICE] = df[PRODUCTION_UNIT_PRICE_EUR]
     df[NET_BUY_PRICE] = calculate_net_price(df[UNIT_PRICE], 'buy')

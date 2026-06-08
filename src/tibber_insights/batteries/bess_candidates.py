@@ -9,9 +9,9 @@ bess_candidates = []
 #     rtes=[.8815] * 6,  # Could not find info on rte of additional modules, so assuming equal
 #     prices=[1089, 1818, 2547, 3276, 4005, 4734]
 # ).get_all_possible_besses_of_this_type()
-# Based on https://energienerds.nl/index.php/2026/02/10/zendure-solarflow-2400-ac-review-de-ultieme-ac-stekkerbatterij-voor-salderingsvrij-zelfverbruik#prijs
-# Consulted June 7, 2026
-
+# # Based on https://energienerds.nl/index.php/2026/02/10/zendure-solarflow-2400-ac-review-de-ultieme-ac-stekkerbatterij-voor-salderingsvrij-zelfverbruik#prijs
+# # Consulted June 7, 2026
+#
 # bess_candidates += BessType(
 #     name=f'Anker SOLIX Solarbank Max AC',
 #     extension_name='BP7000 module',
@@ -31,9 +31,9 @@ bess_candidates = []
 #     rtes=[.87],
 #     prices=[2399]
 # ).get_all_possible_besses_of_this_type()
+# # Based on https://energienerds.nl/index.php/2026/05/08/zendure-solarflow-mix-review#prijs
+# # Consulted June 7, 2026
 
 bess_candidates += BessType(name=f'TEST TEST Anker SOLIX Solarbank Max AC', extension_name='BP7000 module',
                             capacities=[7 * (i + 1) for i in range(2)], charging_rates=[3.5] * 2, rtes=[.835] * 2,
                             prices=[2499 + 1699 * i for i in range(2)]).get_all_possible_besses_of_this_type()
-
-# MAX_CAPACITY_TO_CONSIDER = 30

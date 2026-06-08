@@ -222,7 +222,7 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavio
         s_profit = format_val(stats[PROFIT_AFTER_10_YEARS], max_profit_10y, w_profit, ".0f")
         s_payback = format_val(stats[PAYBACK_PERIOD], min_payback_period, w_pay, ".2f")
 
-        # 3. Format label with fixed widths to match the header
+        # Format label with fixed widths to match the header
         label = f"|| {bess.name:^{w_name}} | {props:^{w_prop}} || {s_annual} | {s_profit} | {s_payback} ||"
 
         buttons.append(dict(
@@ -271,40 +271,5 @@ def _polish_layout(fig=None, first_df=None, days=None):
         end_date = first_df[TIME].max()
         start_date = end_date - pd.Timedelta(days=days)
         fig.update_xaxes(range=[start_date, end_date])
-
-    fig.show()
-
-
-def plot_bess_savings_surface(results_df, rates, capacities):
-    """
-    Creates a 3D surface plot showing annual savings vs. capacity and rate.
-
-    Args:
-        results_df (pd.DataFrame): The aggregated simulation results.
-        rates (list): The charging rates to display on the X-axis.
-        capacities (list): The capacities to display on the Y-axis.
-    """
-    pivot = results_df \
-        .pivot(index=CAPACITY, columns=CHARGING_RATE, values=ANNUAL_SAVINGS) \
-        .fillna(0)
-
-    fig = go.Figure(data=[go.Surface(
-        z=pivot.values,
-        x=pivot.columns.values,
-        y=pivot.index.values,
-        colorscale='Viridis',
-    )])
-
-    fig.update_layout(
-        title=f'Annual Savings vs Capacity & Rate',
-        scene=dict(
-            xaxis=dict(title=f'Rate ({KW})', tickvals=rates),
-            yaxis=dict(title=f'Capacity ({KWH})', tickvals=capacities),
-            zaxis_title=f'Savings ({EUR})',
-            camera_eye=dict(x=1.5, y=1.5, z=1.2),
-        ),
-        width=900,
-        height=700,
-    )
 
     fig.show()
