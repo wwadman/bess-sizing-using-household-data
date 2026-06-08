@@ -6,7 +6,7 @@ from .quantities import (
     SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BESS, COST_WITH_BESS,
     EUR, KW, KWH, TIME, CUMULATIVE_SAVINGS_DAILY, DAILY_SAVINGS_TOTAL,
     NET_HOUSEHOLD_WITH_BESS,
-    CAPACITY, CHARGING_RATE, BESS, DROPDOWN_QUANTITIES, ANNUAL_SAVINGS
+    CAPACITY, CHARGING_RATE, BESS, ANNUAL_SAVINGS, PROFIT_AFTER_10_YEARS, PAYBACK_PERIOD, SAVINGS_STATS
 )
 
 
@@ -39,7 +39,7 @@ def plot_interactive_bess_behavior(bess_behavior, savings_stats, days=10):
     trace_groups = _add_result_traces(fig, bess_behavior)
     for idx in trace_groups[0]['indices']:
         fig.data[idx].visible = True  # Show by default the first group from dropdown menu
-    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavior)
+    fig = _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavior, savings_stats)
 
     _polish_layout(fig, first_df, days)
 
@@ -168,7 +168,7 @@ def _add_result_traces(fig, bess_behavior):
     return trace_groups
 
 
-def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavior):
+def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavior, savings_stats):
     """
     Constructs the Plotly updatemenus for BESS configuration.
 
@@ -177,9 +177,10 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavio
         common_trace_indices (list[int]): Indices of traces that should always be visible.
         trace_groups (list[dict]): Metadata and indices for each simulation configuration.
         bess_behavior (dict): The dict of results.
+        savings_stats (dict): The dict of savings stats.
 
     Returns:
-        list[dict]: A list of Plotly updatemenu configurations.
+        plotly.graph_objects.Figure: The updated figure.
     """
     def get_visibility_filter(value):
         vis = [False] * len(fig.data)
@@ -191,9 +192,25 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavio
                     vis[idx] = True
         return vis
 
+    # 1. Define fixed widths for alignment
+    w_name = max(len(bess.name) for bess in bess_behavior.keys())
+    w_prop, w_sav, w_pay, w_profit = 30, 20, 20, 20
+
+    # 2. Create the header string
+    header_stats = [f"{f'{stat} ({stat.unit})':^{w_profit}}" for stat in SAVINGS_STATS]
+    header = f"|| {BESS:^{w_name}} | {'Properties':^{w_prop}} || {' | '.join(header_stats)} ||"
+
     buttons = []
     for bess in bess_behavior.keys():
-        label = f"{bess.name}: {bess.properties_to_short_string()}"
+        props = bess.properties_to_short_string()
+        stats = savings_stats[bess]
+
+        # 3. Format label with fixed widths to match the header
+        label = (f"|| {bess.name:^{w_name}} | {props:^{w_prop}} || "
+                 f"{stats[ANNUAL_SAVINGS]:^{w_sav}.2f} | "
+                 f"{stats[PAYBACK_PERIOD]:^{w_pay}.2f} | "
+                 f"{stats[PROFIT_AFTER_10_YEARS]:^{w_profit}.2f} ||")
+
         buttons.append(dict(
             method="update",
             label=label,
@@ -205,22 +222,43 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavio
         direction="down",
         showactive=True,
         x=0.5, xanchor="center",
-        y=1.15, yanchor="top",
+        y=1.05, yanchor="top",
         font=dict(size=14, family="Courier New, monospace")
     )]
 
     fig.update_layout(
         updatemenus=update_menus,
         height=1000,
+        margin=dict(t=200, b=50, l=50, r=50),
         template="plotly_white",
         hovermode='x unified',
         showlegend=True,
         legend2=dict(orientation="h", yanchor="top", y=0.79, xanchor="right", x=1),
         legend3=dict(orientation="h", yanchor="top", y=0.41, xanchor="right", x=1),
         legend4=dict(orientation="h", yanchor="top", y=0.19, xanchor="right", x=1),
-        barmode='relative'
+        barmode='relative',
+        # 4. Add the header as an annotation above the dropdown
+        annotations=[dict(
+            text=header,
+            showarrow=False,
+            xref="paper", yref="paper",
+            x=0.5, y=1.08,
+            xanchor="center", yanchor="bottom",
+            font=dict(size=14, family="Courier New, monospace")
+        )]
     )
     return fig
+
+
+def _polish_layout(fig=None, first_df=None, days=None):
+    fig.update_yaxes(fixedrange=True)
+
+    if days:
+        end_date = first_df[TIME].max()
+        start_date = end_date - pd.Timedelta(days=days)
+        fig.update_xaxes(range=[start_date, end_date])
+
+    fig.show()
 
 
 def plot_bess_savings_surface(results_df, rates, capacities):
@@ -254,16 +292,5 @@ def plot_bess_savings_surface(results_df, rates, capacities):
         width=900,
         height=700,
     )
-
-    fig.show()
-
-
-def _polish_layout(fig=None, first_df=None, days=None):
-    fig.update_yaxes(fixedrange=True)
-
-    if days:
-        end_date = first_df[TIME].max()
-        start_date = end_date - pd.Timedelta(days=days)
-        fig.update_xaxes(range=[start_date, end_date])
 
     fig.show()
