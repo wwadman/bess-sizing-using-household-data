@@ -200,16 +200,30 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavio
     header_stats = [f"{f'{stat} ({stat.unit})':^{w_profit}}" for stat in SAVINGS_STATS]
     header = f"|| {BESS:^{w_name}} | {'Properties':^{w_prop}} || {' | '.join(header_stats)} ||"
 
+    # 3. Find the best values for bolding
+    all_stats = list(savings_stats.values())
+    max_annual_savings = max(s[ANNUAL_SAVINGS] for s in all_stats)
+    max_profit_10y = max(s[PROFIT_AFTER_10_YEARS] for s in all_stats)
+    min_payback_period = min(s[PAYBACK_PERIOD] for s in all_stats)
+
     buttons = []
     for bess in bess_behavior.keys():
         props = bess.properties_to_short_string()
         stats = savings_stats[bess]
 
+        # Formatting helper to bold best values
+        def format_val(val, best_val, width, fmt):
+            s_val = f"{val:^{width}{fmt}}"
+            if val == best_val:
+                return f"<b>{s_val}</b>"
+            return s_val
+
+        s_annual = format_val(stats[ANNUAL_SAVINGS], max_annual_savings, w_sav, ".0f")
+        s_profit = format_val(stats[PROFIT_AFTER_10_YEARS], max_profit_10y, w_profit, ".0f")
+        s_payback = format_val(stats[PAYBACK_PERIOD], min_payback_period, w_pay, ".2f")
+
         # 3. Format label with fixed widths to match the header
-        label = (f"|| {bess.name:^{w_name}} | {props:^{w_prop}} || "
-                 f"{stats[ANNUAL_SAVINGS]:^{w_sav}.2f} | "
-                 f"{stats[PAYBACK_PERIOD]:^{w_pay}.2f} | "
-                 f"{stats[PROFIT_AFTER_10_YEARS]:^{w_profit}.2f} ||")
+        label = f"|| {bess.name:^{w_name}} | {props:^{w_prop}} || {s_annual} | {s_profit} | {s_payback} ||"
 
         buttons.append(dict(
             method="update",

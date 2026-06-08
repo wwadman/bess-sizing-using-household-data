@@ -102,11 +102,9 @@ def compute_savings_stats(sim_df, bess_price):
               f'is not close to a whole number of years. '
               f'Therefore seasonality might significantly affect the payback period estimate...!')
     annual_savings = round(savings / n_years_with_savings_simulated, 2)
-    payback_period = round(bess_price / annual_savings, 2)
-    profit_after_10_years = round(annual_savings * 10 - bess_price, 2)
-
-    stats = {ANNUAL_SAVINGS: annual_savings,
-             PROFIT_AFTER_10_YEARS: profit_after_10_years,
-             PAYBACK_PERIOD: payback_period,
-             }
+    stats = {
+        ANNUAL_SAVINGS: annual_savings,
+        PROFIT_AFTER_10_YEARS: round(annual_savings * 10 - bess_price, 2),
+        PAYBACK_PERIOD: round(bess_price / annual_savings, 2)
+    }
     return stats

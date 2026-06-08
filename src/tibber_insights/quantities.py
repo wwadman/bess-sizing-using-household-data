@@ -56,9 +56,9 @@ BESS_PROPERTIES = [CAPACITY, CHARGING_RATE, RTE, PRICE]
 
 # Savings stats:
 ANNUAL_SAVINGS = Quantity("Annual savings", EUR)
-PAYBACK_PERIOD = Quantity("Payback period", "y")
 PROFIT_AFTER_10_YEARS = Quantity("10y profit", EUR)
-SAVINGS_STATS = [ANNUAL_SAVINGS, PAYBACK_PERIOD, PROFIT_AFTER_10_YEARS]
+PAYBACK_PERIOD = Quantity("Payback period", "y")
+SAVINGS_STATS = [ANNUAL_SAVINGS, PROFIT_AFTER_10_YEARS, PAYBACK_PERIOD]
 
 
 if __name__ == "__main__":
