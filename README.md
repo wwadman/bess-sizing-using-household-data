@@ -34,9 +34,8 @@ help with that.
 
 ## Open issues
 - Check if the optimal strategy indeed fully exploits "own usage".
-- Add battery price in cost comparison
-- 
+- Lookup checklist for going open source in the way I want to.
+  - finish this checklist
 ## Nice-to-haves
-- Add a stupidly simple use-your-own-energy strategy
-- Remove constraint that we cannot charge when discharging and vice versa
+- Add a stupidly simple use-your-own-energy strategy (which indicates how much we can earn by optimizing bess operation)
 - What about Mega batteries? $$
