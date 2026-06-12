@@ -1,12 +1,12 @@
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from .quantities import (
+from src.tibber_insights.quantities import (
     NET_HOUSEHOLD, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID, DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, NET_BUY_PRICE, NET_SELL_PRICE, COST_WO_BESS, COST_WITH_BESS,
-    EUR, KW, KWH, TIME, CUMULATIVE_SAVINGS_DAILY, DAILY_SAVINGS_TOTAL,
+    TIME, CUMULATIVE_SAVINGS_DAILY, DAILY_SAVINGS_TOTAL,
     NET_HOUSEHOLD_WITH_BESS,
-    CAPACITY, CHARGING_RATE, BESS, ANNUAL_SAVINGS, PROFIT_AFTER_10_YEARS, PAYBACK_PERIOD, SAVINGS_STATS
+    BESS, ANNUAL_SAVINGS, PROFIT_AFTER_10_YEARS, PAYBACK_PERIOD, SAVINGS_STATS
 )
 
 
@@ -273,3 +273,10 @@ def _polish_layout(fig=None, first_df=None, days=None):
         fig.update_xaxes(range=[start_date, end_date])
 
     fig.show()
+
+
+if __name__ == "__main__":
+    OUTPUT_DIR = "../../output/"
+    bess_behavior = pd.read_pickle(OUTPUT_DIR + "bess_behavior.pkl")
+    savings_stats = pd.read_pickle(OUTPUT_DIR + "savings_stats.pkl")
+    plot_interactive_bess_behavior(bess_behavior, savings_stats, days=10)
