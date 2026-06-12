@@ -8,7 +8,7 @@ from src.tibber_insights.quantities import (
     NET_HOUSEHOLD_WITH_BESS,
     BESS, ANNUAL_SAVINGS, PROFIT_AFTER_10_YEARS, PAYBACK_PERIOD, SAVINGS_STATS
 )
-
+OUTPUT_DIR = 'output'
 
 def plot_interactive_bess_behavior(bess_behavior, savings_stats, days=10):
     """
@@ -19,11 +19,10 @@ def plot_interactive_bess_behavior(bess_behavior, savings_stats, days=10):
 
     Args:
         bess_behavior (dict): A dict with Bess instances as keys, and
-            sim_df as values.
+            sim_df (containing pretty much all relevant time series resulting from the simulation) as values.
         savings_stats (dict): A dict with Bess instances as keys, and
-            stats as values.
-        days (int, optional): The number of days to show by default (zoomed in).
-            Defaults to 10.
+            stats (containing pretty much all relevant aggregated statistics resulting from the simulation) as values.
+        days (int, optional): The number of days to show by default (zoomed in). Defaults to 10.
     """
 
     # Create all stuff that does not change when toggling anything from the dropdowns
@@ -230,20 +229,21 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavio
             label=label,
             args=[{"visible": get_visibility_filter(bess.name)}]
         ))
-
+    button_x = .5
+    button_y = 1.10
     update_menus = [dict(
         buttons=buttons,
         direction="down",
         showactive=True,
-        x=0.5, xanchor="center",
-        y=1.05, yanchor="top",
+        x=button_x, xanchor="center",
+        y=button_y, yanchor="top",
         font=dict(size=14, family="Courier New, monospace")
     )]
 
     fig.update_layout(
         updatemenus=update_menus,
         height=1000,
-        margin=dict(t=200, b=50, l=50, r=50),
+        margin=dict(t=130, b=50, l=75, r=50),
         template="plotly_white",
         hovermode='x unified',
         showlegend=True,
@@ -256,7 +256,7 @@ def _create_dropdown_menus(fig, common_trace_indices, trace_groups, bess_behavio
             text=header,
             showarrow=False,
             xref="paper", yref="paper",
-            x=0.5, y=1.08,
+            x=button_x - .005, y=button_y + .01,
             xanchor="center", yanchor="bottom",
             font=dict(size=14, family="Courier New, monospace")
         )]
@@ -276,7 +276,7 @@ def _polish_layout(fig=None, first_df=None, days=None):
 
 
 if __name__ == "__main__":
-    OUTPUT_DIR = "../../output/"
-    bess_behavior = pd.read_pickle(OUTPUT_DIR + "bess_behavior.pkl")
-    savings_stats = pd.read_pickle(OUTPUT_DIR + "savings_stats.pkl")
+    output_path = f"../../{OUTPUT_DIR}/"
+    bess_behavior = pd.read_pickle(output_path + "bess_behavior.pkl")
+    savings_stats = pd.read_pickle(output_path + "savings_stats.pkl")
     plot_interactive_bess_behavior(bess_behavior, savings_stats, days=10)

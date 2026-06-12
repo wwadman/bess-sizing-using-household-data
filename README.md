@@ -39,3 +39,4 @@ help with that.
 ## Nice-to-haves
 - Add a stupidly simple use-your-own-energy strategy (which indicates how much we can earn by optimizing bess operation)
 - What about Mega batteries? $$
+- Add strategy to dropdown menu
