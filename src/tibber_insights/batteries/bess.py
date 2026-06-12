@@ -37,3 +37,16 @@ class Bess:
 
     def __repr__(self):
         return f"Bess(name='{self.name}', capacity={self.capacity}, charging_rate={self.charging_rate}, rte={self.rte}, price={self.price}, strategy={self.strategy.__name__})"
+
+    def __eq__(self, other):  # Just to enable pickling of dicts of Bess, which smoothens visualization.py development
+        if not isinstance(other, Bess):
+            return NotImplemented
+        return (self.name == other.name and
+                self.capacity == other.capacity and
+                self.charging_rate == other.charging_rate and
+                self.rte == other.rte and
+                self.price == other.price and
+                self.strategy == other.strategy)
+
+    def __hash__(self):
+        return hash((self.name, self.capacity, self.charging_rate, self.rte, self.price, self.strategy))
