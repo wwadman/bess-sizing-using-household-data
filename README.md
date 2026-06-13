@@ -33,10 +33,10 @@ help with that.
 - 'net' means 'after potential taxes and fees' (not 'grid')
 
 ## Open issues
-- Check if the optimal strategy indeed fully exploits "own usage".
+- Generalize usage to other Tibber users
+- Generalize usage to other users with a dynamical contract
 - Lookup checklist for going open source in the way I want to.
   - finish this checklist
 ## Nice-to-haves
 - Add a stupidly simple use-your-own-energy strategy (which indicates how much we can earn by optimizing bess operation)
-- What about Mega batteries? $$
 - Add strategy to dropdown menu
