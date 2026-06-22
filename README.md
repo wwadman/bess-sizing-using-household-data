@@ -35,6 +35,7 @@ help with that.
 ## Open issues
 - Generalize usage to other Tibber users
 - Generalize usage to other users with a dynamical contract
+- Add DoD to model
 - Lookup checklist for going open source in the way I want to.
   - finish this checklist
 ## Nice-to-haves
