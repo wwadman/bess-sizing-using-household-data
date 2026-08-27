@@ -1,4 +1,4 @@
-# Tibber Insights
+
 
 Analyze and simulate energy costs with Tibber and home batteries.
 
