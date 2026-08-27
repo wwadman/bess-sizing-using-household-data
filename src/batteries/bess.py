@@ -2,10 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from tibber_insights.quantities import BESS_PROPERTIES
+from quantities import BESS_PROPERTIES
 import numpy as np
-
-from tibber_insights.strategies import maximize_profit_daily
 
 
 class Bess:

@@ -4,11 +4,11 @@
 
 import pandas as pd
 
-from tibber_insights.batteries.bess_candidates import bess_candidates
-from tibber_insights.data_loader import load_monthly_files
-from tibber_insights.billing import forecast_2027_bill
-from tibber_insights.simulation import simulate, compute_savings_stats
-from tibber_insights.visualization import plot_interactive_bess_behavior, OUTPUT_DIR
+from src import bess_candidates
+from data_loader import load_monthly_files
+from billing import forecast_2027_bill
+from simulation import simulate, compute_savings_stats
+from visualization import plot_interactive_bess_behavior, OUTPUT_DIR
 
 def main():
     pd.set_option(

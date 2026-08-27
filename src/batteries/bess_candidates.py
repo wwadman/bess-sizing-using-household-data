@@ -2,8 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from tibber_insights.batteries.bess_type import BessType
-from tibber_insights.batteries.bess import Bess
+from src import BessType
+
 bess_candidates = []
 bess_candidates += BessType(
     name='Zendure SolarFlow 2400 AC+',
