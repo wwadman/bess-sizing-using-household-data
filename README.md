@@ -1,10 +1,18 @@
+# BESS Compare
 
+Compare any number of [Battery energy storage systems](https://en.wikipedia.org/wiki/Battery_energy_storage_system) (BESSs) by simulating their performance in _your_ household. 
 
-Analyze and simulate energy costs with Tibber and home batteries.
+By providing your own household load profile, this repo estimates 
 
 Comparison websites like https://energienerds.nl/index.php/2025/08/26/stekkerbatterijen-de-startgids help finding your
 optimal battery configuration, but first you should decide what capacity and max rate is right for you. This repo will
-help with that.
+help with that, 
+
+
+
+Analyze and simulate energy costs with historical data  and home batteries.
+
+
 
 ## Features
 
@@ -14,7 +22,7 @@ help with that.
 
 ## Project Structure
 
-- `src/tibber_insights/`: Core package containing logic for billing, simulation, and visualization.
+- `src/`: Core package containing logic for billing, simulation, and visualization.
 - `main.py`: Entry point for running forecasts and simulations.
 - `csv/`: Directory for input data (Tibber hourly exports).
 
