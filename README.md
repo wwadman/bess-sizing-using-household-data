@@ -1,21 +1,20 @@
 # BESS Compare
 
-Compare any number of [Battery energy storage systems](https://en.wikipedia.org/wiki/Battery_energy_storage_system) (BESSs) by simulating their expected savings for _your_ household. 
+Compare any number of [Battery energy storage systems](https://en.wikipedia.org/wiki/Battery_energy_storage_system) (BESSs, a.k.a. home batteries) by simulating their expected savings for _your_ household. 
 
-By providing your own household load profile and some battery configurations that you are interested in, 
-this tool shows 
+By providing your own household load profile and some BESS configurations that you are interested in, this tool shows 
 1. how those batteries would ideally have behaved in your household in that time period
 2. how much money they would have saved in that way
 
 [TODO: insert image of plots here]
 
-Finally, the tool lists some stats like payback period for each battery, _assuming your household load profile will stay the same in upcoming years_. 
-This will give you a good idea of which battery is the best fit for your household and your expected savings.
+Finally, the tool lists some stats like payback period for each BESS, _assuming your household load profile will stay the same in upcoming years_. 
+This will give you a good idea of which BESS is the best fit for your household and your expected savings.
 
 ## FAQ
 #### Why not just use the tool on https://jeroen.nl/energie/opslaan/thuisbatterij/capaciteit-berekenen?
 Jeroen's tool serves as a great first step for finding the battery capacity that's roughly ideal for your household. 
-In contrast, this tool serves as a great second step for picking from some specific battery configurations with such capacity.
+In contrast, this tool serves as a great second step for picking from some specific BESS configurations with such capacity.
 
 ## Setup and usage
 
@@ -24,7 +23,8 @@ In contrast, this tool serves as a great second step for picking from some speci
    uv sync
    ```
 2. Place your Tibber data CSVs in the `csv/` folder. TODO: add instructions for obtaining tibber data
-3. Run the simulation:
+3. Add the battery configurations you want to compare to `src/batteries/bess_candidates.py`
+4. Run the simulation:
    ```bash
    python main.py
    ```
