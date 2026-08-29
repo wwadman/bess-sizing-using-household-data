@@ -2,52 +2,48 @@
 
 Compare any number of [Battery energy storage systems](https://en.wikipedia.org/wiki/Battery_energy_storage_system) (BESSs) by simulating their performance in _your_ household. 
 
-By providing your own household load profile, this repo estimates stats like payback period of different battery configurations 
-_assuming your household load profile will stay the same in upcoming years_. 
+By providing your own household load profile and some battery configurations that you are interested in, 
+this repo shows 
+1. how those batteries would ideally have behaved in your household in that time period
+2. how much money they would have saved in that way
 
-It also allows you to simulate different charging strategies. 
+[TODO: insert image of plots here]
+
+Finally, the tool lists some stats like payback period for each battery, _assuming your household load profile will stay the same in upcoming years_. 
+This will give you a rough idea of which battery is the best fit for your household and your expected savings.
+
 
 ### Assumptions
-- Dynamical electricity contract with hourly/quarterly prices. Currently only Tibber is supported, but other providers can be added.
-    - At least one year of historical data is required to accurately estimate your future energy bill.
-
-
-Comparison websites like https://energienerds.nl/index.php/2025/08/26/stekkerbatterijen-de-startgids help finding your
-optimal battery configuration, but first you should decide what capacity and max rate is right for you. This repo will
-help with that,
+- A household load profile under a dynamical electricity contract with hourly/quarterly prices. 
+  - Currently only Tibber is supported, but other providers can be added.
+  - At least one year of historical data is required to accurately estimate your future energy bill.
+- Obviously, the model assumes the Dutch salderingsregeling to be abolished.
+- TODO: complete this list
 
 ## Features
 - **Energy Bill Forecasting**: Estimate your future-year energy bill based on historical consumption and production.
 - **Battery Simulation**: Compare different battery capacities and charging strategies (Arbitrage, MPC).
 - **Visualization**: Detailed plots of battery behavior, State of Charge (SOC), and market prices:
+  - Battery SOC over time
+  - Energy bought/sold from/to the grid
+  - Market prices and household consumption
 
-[TODO: insert image of plots here]
+## FAQ
+**Why not just use the tool on https://jeroen.nl/energie/opslaan/thuisbatterij/capaciteit-berekenen?**
+The tool on that website is a great first step for estimating the battery capacity that will be roughly ideal for your household. 
+In contrast, the tool in this repo serves as a great second step to compare specific battery configurations in the market.
 
-## Project Structure
-- `src/`: Core package containing logic for billing, simulation, and visualization.
-- `main.py`: Entry point for running forecasts and simulations.
-- `csv/`: Directory for input data (Tibber hourly exports).
+## Setup and usage
 
-## Setup
-
-1. Install dependencies (requires `uv` or `pip`):
+1. Install dependencies with uv:
    ```bash
-   pip install .
+   uv sync
    ```
-2. Place your Tibber data CSVs in the `csv/` folder.
+2. Place your Tibber data CSVs in the `csv/` folder. TODO: add instructions for obtaining tibber data
 3. Run the simulation:
    ```bash
    python main.py
    ```
+   
 ## Notes
 - 'net' means 'after potential taxes and fees' (not 'grid')
-
-## Open issues
-- Generalize usage to other Tibber users
-- Generalize usage to other users with a dynamical contract
-- Add DoD to model
-- Lookup checklist for going open source in the way I want to.
-  - finish this checklist
-## Nice-to-haves
-- Add a stupidly simple use-your-own-energy strategy (which indicates how much we can earn by optimizing bess operation)
-- Add strategy to dropdown menu
