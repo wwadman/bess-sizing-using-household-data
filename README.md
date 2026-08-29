@@ -2,26 +2,28 @@
 
 Compare any number of [Battery energy storage systems](https://en.wikipedia.org/wiki/Battery_energy_storage_system) (BESSs) by simulating their performance in _your_ household. 
 
-By providing your own household load profile, this repo estimates 
+By providing your own household load profile, this repo estimates stats like payback period of different battery configurations 
+_assuming your household load profile will stay the same in upcoming years_. 
+
+It also allows you to simulate different charging strategies. 
+
+### Assumptions
+- Dynamical electricity contract with hourly/quarterly prices. Currently only Tibber is supported, but other providers can be added.
+    - At least one year of historical data is required to accurately estimate your future energy bill.
+
 
 Comparison websites like https://energienerds.nl/index.php/2025/08/26/stekkerbatterijen-de-startgids help finding your
 optimal battery configuration, but first you should decide what capacity and max rate is right for you. This repo will
-help with that, 
-
-
-
-Analyze and simulate energy costs with historical data  and home batteries.
-
-
+help with that,
 
 ## Features
-
-- **Energy Bill Forecasting**: Estimate your 2027 energy bill based on historical consumption and production.
+- **Energy Bill Forecasting**: Estimate your future-year energy bill based on historical consumption and production.
 - **Battery Simulation**: Compare different battery capacities and charging strategies (Arbitrage, MPC).
-- **Visualization**: Detailed plots of battery behavior, State of Charge (SOC), and market prices.
+- **Visualization**: Detailed plots of battery behavior, State of Charge (SOC), and market prices:
+
+[TODO: insert image of plots here]
 
 ## Project Structure
-
 - `src/`: Core package containing logic for billing, simulation, and visualization.
 - `main.py`: Entry point for running forecasts and simulations.
 - `csv/`: Directory for input data (Tibber hourly exports).
