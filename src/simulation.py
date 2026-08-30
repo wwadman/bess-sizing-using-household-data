@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import pandas as pd
-from .quantities import (
+from src.quantities import (
     NET_HOUSEHOLD, CHARGE_FROM_HOUSE, CHARGE_FROM_GRID,
     DISCHARGE_TO_HOUSE, DISCHARGE_TO_GRID,
     SOC, COST_WO_BESS, COST_WITH_BESS, NET_BUY_PRICE, NET_SELL_PRICE, TIME,

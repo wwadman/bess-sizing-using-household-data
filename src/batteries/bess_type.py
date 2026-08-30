@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from src.batteries.bess import Bess
-from strategies import maximize_profit_daily
+from src.strategies import maximize_profit_daily
 
 
 class BessType():

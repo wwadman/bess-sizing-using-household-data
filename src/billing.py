@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from .quantities import EUR, KWH, NET_BUY_PRICE, NET_SELL_PRICE, CONSUMPTION, PRODUCTION
+from src.quantities import EUR, KWH, NET_BUY_PRICE, NET_SELL_PRICE, CONSUMPTION, PRODUCTION
 
 
 def forecast_2027_bill(df):

@@ -4,7 +4,7 @@
 
 import glob
 import pandas as pd
-from .quantities import NET_HOUSEHOLD, NET_BUY_PRICE, NET_SELL_PRICE, TIME, \
+from src.quantities import NET_HOUSEHOLD, NET_BUY_PRICE, NET_SELL_PRICE, TIME, \
     CONSUMPTION, PRODUCTION, UNIT_PRICE, CONSUMPTION_UNIT_PRICE_EUR, PRODUCTION_UNIT_PRICE_EUR, EXPECTED_CONSUMPTION, \
     EXPECTED_PRODUCTION, CONSUMPTION_COST_EUR, PRODUCTION_PROFIT_EUR
 
@@ -12,7 +12,7 @@ ENERGIEBELASTING = 0.09161  # €/kWh only when consuming
 INKOOPVERGOEDING = 0.0242  # €/kWh only when consuming
 VAT_RATE = 0.21  # 21% BTW
 
-def load_monthly_files(pattern="csv/data-*.csv"):
+def load_monthly_files(pattern="example_csv_files/data-*.csv"):
     files = sorted(glob.glob(pattern))
     if not files:
         raise FileNotFoundError(f"No files matched {pattern}")

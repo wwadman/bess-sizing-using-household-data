@@ -4,11 +4,11 @@
 
 import pandas as pd
 
-from src.batteries import bess_candidates
-from data_loader import load_monthly_files
-from billing import forecast_2027_bill
-from simulation import simulate, compute_savings_stats
-from visualization import plot_interactive_bess_behavior, OUTPUT_DIR
+from src.batteries.bess_candidates import bess_candidates
+from src.data_loader import load_monthly_files
+from src.billing import forecast_2027_bill
+from src.simulation import simulate, compute_savings_stats
+from src.visualization import plot_interactive_bess_behavior, OUTPUT_DIR
 
 def main():
     pd.set_option(
@@ -19,7 +19,7 @@ def main():
     )
 
     # -- Load data -----------------------------------------------------------------
-    df = load_monthly_files("csv/data-*.csv")
+    df = load_monthly_files("example_csv_files/data-*.csv")
     df.to_csv("tibber_all_months_merged.csv", index=False)
 
     # -- 2027 bill forecast --------------------------------------------------------

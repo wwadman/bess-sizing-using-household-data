@@ -11,7 +11,7 @@ wheels/
 venv/
 
 # Project-specific data and results
-csv/
+example_csv_files/
 *.csv
 *.png
 .DS_Store
