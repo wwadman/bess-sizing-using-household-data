@@ -4,7 +4,7 @@
 
 import pandas as pd
 
-from src import bess_candidates
+from src.batteries import bess_candidates
 from data_loader import load_monthly_files
 from billing import forecast_2027_bill
 from simulation import simulate, compute_savings_stats
