@@ -39,8 +39,8 @@ def main():
         savings_stats[bess] = compute_savings_stats(sim_df, bess.price)
 
     # save results
-    pd.to_pickle(bess_behavior, OUTPUT_DIR + "/bess_behavior.pkl")
-    pd.to_pickle(savings_stats, OUTPUT_DIR + "/savings_stats.pkl")
+    pd.to_pickle(bess_behavior, OUTPUT_DIR + "/bess_behavior_last_run.pkl")
+    pd.to_pickle(savings_stats, OUTPUT_DIR + "/savings_stats_last_run.pkl")
 
     plot_interactive_bess_behavior(bess_behavior, savings_stats, days=10)
 

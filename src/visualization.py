@@ -279,8 +279,20 @@ def _polish_layout(fig=None, first_df=None, days=None):
     fig.show()
 
 
-if __name__ == "__main__":
-    output_path = f"../../{OUTPUT_DIR}/"
-    bess_behavior = pd.read_pickle(output_path + "bess_behavior.pkl")
-    savings_stats = pd.read_pickle(output_path + "savings_stats.pkl")
+def plot_example_results():
+    plot_results("bess_behavior.pkl_example", "savings_stats.pkl_example")
+
+def plot_last_run_results():
+    plot_results("bess_behavior_last_run.pkl", "savings_stats_last_run.pkl")
+
+
+def plot_results(bess_behavior_file_name, savings_stats_file_name):
+    output_path = f"../{OUTPUT_DIR}/"
+    bess_behavior = pd.read_pickle(output_path + bess_behavior_file_name)
+    savings_stats = pd.read_pickle(output_path + savings_stats_file_name)
     plot_interactive_bess_behavior(bess_behavior, savings_stats, days=10)
+
+
+if __name__ == "__main__":
+    plot_example_results()
+    # plot_last_run_results()
