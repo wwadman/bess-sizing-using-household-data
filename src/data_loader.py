@@ -12,7 +12,7 @@ ENERGIEBELASTING = 0.09161  # €/kWh only when consuming
 INKOOPVERGOEDING = 0.0242  # €/kWh only when consuming
 VAT_RATE = 0.21  # 21% BTW
 
-def load_monthly_files(pattern="example_csv_files/data-*.csv"):
+def load_monthly_files(pattern):
     files = sorted(glob.glob(pattern))
     if not files:
         raise FileNotFoundError(f"No files matched {pattern}")

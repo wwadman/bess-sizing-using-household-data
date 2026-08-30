@@ -11,9 +11,7 @@ wheels/
 venv/
 
 # Project-specific data and results
-example_csv_files/
 *.csv
-*.png
 .DS_Store
 
 # IDEs

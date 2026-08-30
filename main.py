@@ -10,7 +10,7 @@ from src.billing import forecast_2027_bill
 from src.simulation import simulate, compute_savings_stats
 from src.visualization import plot_interactive_bess_behavior, OUTPUT_DIR
 
-def main():
+def main(csv_folder: str):
     pd.set_option(
         'display.max_rows', 15,
         'display.max_columns', 20,
@@ -19,8 +19,8 @@ def main():
     )
 
     # -- Load data -----------------------------------------------------------------
-    df = load_monthly_files("example_csv_files/data-*.csv")
-    df.to_csv("tibber_all_months_merged.csv", index=False)
+    df = load_monthly_files(f"{csv_folder}/data-*.csv*")
+    df.to_csv(f"{csv_folder}/tibber_all_months_merged.csv", index=False)
 
     # -- 2027 bill forecast --------------------------------------------------------
     forecast = forecast_2027_bill(df)
@@ -47,6 +47,7 @@ def main():
 if __name__ == "__main__":
     # Print simulation start time
     print(f"Simulation started at {pd.Timestamp.now()}")
-    main()
+    main(csv_folder="example_household_load_profile_csvs")
+    # main(csv_folder="your_household_load_profile_csvs") # Point to your own households csv
     # Print simulation end time
     print(f"Simulation ended at {pd.Timestamp.now()}")

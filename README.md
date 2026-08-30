@@ -6,10 +6,17 @@ By providing your own household load profile and some BESS configurations that y
 1. how those batteries would ideally have behaved in your household in that time period
 2. how much money they would have saved in that way
 
-[TODO: insert image of plots here]
+![img.png](img.png)
 
-Finally, the tool lists some stats like payback period for each BESS, _assuming your household load profile will stay the same in upcoming years_. 
+At the top you can select any BESS config, 
+and the drop down menu itself some stats like payback period for each BESS, 
+_assuming your household load profile will stay the same in upcoming years_:!
+![img_1.png](img_1.png)
+
+
 This will give you a good idea of which BESS is the best fit for your household and your expected savings.
+
+![Visualization.mov](Visualization.mov)
 
 ## FAQ
 #### Why not just use the tool on https://jeroen.nl/energie/opslaan/thuisbatterij/capaciteit-berekenen?

@@ -5,12 +5,13 @@
 - `main.py`: Entry point for running forecasts and simulations.
 - `csv/`: Directory for input data (Tibber hourly exports).
 
-## Open issues
+## Open issues / To Do's
 - Generalize usage to other Tibber users
 - Generalize usage to other users with a dynamical contract
 - Add [DoD](https://en.wikipedia.org/wiki/Depth_of_discharge) to model
 - Lookup checklist for going open source in the way I want to.
   - finish this checklist
+  - Add testings
 ## Nice-to-haves
 - Add a stupidly simple use-your-own-energy strategy (which indicates how much we can earn by properly optimizing bess operation)
   - Add strategy to dropdown menu
