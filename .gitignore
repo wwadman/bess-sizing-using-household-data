@@ -12,6 +12,7 @@ venv/
 
 # Project-specific data and results
 *.csv
+!example_household_load_profile_csvs/*.csv
 .DS_Store
 
 # IDEs
