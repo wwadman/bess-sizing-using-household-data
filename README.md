@@ -13,7 +13,8 @@ and the drop down menu itself shows some stats like payback period for each BESS
 _assuming your household load profile will stay the same in upcoming years_:
 ![dropdown.png](media/dropdown.png)
 
-This will give you a good idea of which BESS is the best fit for your household and your expected savings.
+This will give you a good idea of which BESS is the best fit for your household and your expected savings. 
+(no guarantees given of course, this is my first open source project :))
 
 [//]: # (![Visualization.mov]&#40;Visualization.mov&#41;)
 
@@ -21,6 +22,9 @@ This will give you a good idea of which BESS is the best fit for your household 
 #### Why not just use the tool on https://jeroen.nl/energie/opslaan/thuisbatterij/capaciteit-berekenen?
 Jeroen's tool serves as a great first step for finding the battery capacity that's roughly ideal for your household. 
 In contrast, this tool serves as a great second step for picking from some specific BESS configurations with such capacity.
+
+#### Why not just use the tool on https://www.bess.nl/batterijen/capaciteit-berekenen?
+BESS.nl's tool is great for finding the best BESS configuration for your household,
   
 ## Setup and usage
 
@@ -29,13 +33,17 @@ In contrast, this tool serves as a great second step for picking from some speci
    ```bash
    uv sync
    ```
-2. Get your Tibber (household load profile) data using this [this tibber-export repo](https://codeberg.org/marians/tibber-export) and put the monthly CSVs in the `csv/` folder.
-3. Add the battery configurations you want to compare to `src/batteries/bess_candidates.py`
-4. Run the simulation:
+3. Optionally: run the example simulation to see how the tool works:
    ```bash
    python main.py
    ```
-
+4. Get your Tibber (household load profile) data using this [this tibber-export repo](https://codeberg.org/marians/tibber-export) and put the monthly CSVs in the `csv/` folder.
+5. Add the battery configurations you want to compare to `src/batteries/bess_candidates.py`
+6. Run your own simulation:
+   ```bash
+   python main.py
+   ```
+ 
 ## Notes
 - 'net' means 'after potential taxes and fees' (not 'grid')
 
