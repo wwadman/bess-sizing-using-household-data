@@ -22,6 +22,9 @@ This will give you a good idea of which BESS is the best fit for your household 
 #### Why not just use the tool on https://jeroen.nl/energie/opslaan/thuisbatterij/capaciteit-berekenen?
 Jeroen's tool serves as a great first step for finding the battery capacity that's roughly ideal for your household. 
 In contrast, this tool serves as a great second step for picking from some specific BESS configurations with such capacity.
+
+#### What is a good starting point for finding the specs of candidate BESSes?
+[Complete Thuisbatterij Vergelijker](https://energienerds.nl/index.php/2025/08/26/stekkerbatterijen-de-startgids) on Energienerds.nl could be your friend.
   
 ## Setup and usage
 
