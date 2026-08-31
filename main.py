@@ -20,7 +20,7 @@ def main(csv_folder: str):
     )
 
     # -- Load data -----------------------------------------------------------------
-    df = load_monthly_files(f"{csv_folder}/data-*.csv*")
+    df = load_monthly_files(f"{csv_folder}/data-*.csv")
     df.to_csv(f"{csv_folder}/tibber_all_months_merged.csv", index=False)
 
     # -- 2027 bill forecast --------------------------------------------------------
