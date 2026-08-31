@@ -6,30 +6,30 @@ By providing your own household load profile and some BESS configurations that y
 1. how those batteries would ideally have behaved in your household in that time period
 2. how much money they would have saved in that way
 
-![img.png](img.png)
+![plots.png](media/plots.png)
 
 At the top you can select any BESS config, 
-and the drop down menu itself some stats like payback period for each BESS, 
-_assuming your household load profile will stay the same in upcoming years_:!
-![img_1.png](img_1.png)
-
+and the drop down menu itself shows some stats like payback period for each BESS, 
+_assuming your household load profile will stay the same in upcoming years_:
+![dropdown.png](media/dropdown.png)
 
 This will give you a good idea of which BESS is the best fit for your household and your expected savings.
 
-![Visualization.mov](Visualization.mov)
+[//]: # (![Visualization.mov]&#40;Visualization.mov&#41;)
 
 ## FAQ
 #### Why not just use the tool on https://jeroen.nl/energie/opslaan/thuisbatterij/capaciteit-berekenen?
 Jeroen's tool serves as a great first step for finding the battery capacity that's roughly ideal for your household. 
 In contrast, this tool serves as a great second step for picking from some specific BESS configurations with such capacity.
-
+  
 ## Setup and usage
 
-1. Install dependencies with uv:
+1. Clone this repository
+2. Install dependencies with uv from the root of the repo:
    ```bash
    uv sync
    ```
-2. Place your Tibber data CSVs in the `csv/` folder. TODO: add instructions for obtaining tibber data
+2. Get your Tibber (household load profile) data using this [this tibber-export repo](https://codeberg.org/marians/tibber-export) and put the monthly CSVs in the `csv/` folder.
 3. Add the battery configurations you want to compare to `src/batteries/bess_candidates.py`
 4. Run the simulation:
    ```bash
