@@ -14,7 +14,7 @@ _assuming your household load profile will stay the same in upcoming years_:
 ![dropdown.png](media/dropdown.png)
 
 This will give you a good idea of which BESS is the best fit for your household and your expected savings. 
-(no guarantees given of course, this is my first open source project :))
+(no guarantees given of course: your load profile might change, and so could the law, fees, etc)
 
 [//]: # (![Visualization.mov]&#40;Visualization.mov&#41;)
 
