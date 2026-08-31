@@ -1,9 +1,9 @@
 # BESS Compare
 
-Compare any number of [Battery energy storage systems](https://en.wikipedia.org/wiki/Battery_energy_storage_system) (BESSs, a.k.a. home batteries) by simulating their expected savings for _your_ household. 
+Compare any number of [Battery Energy Storage Systems](https://en.wikipedia.org/wiki/Battery_energy_storage_system) (BESSes, pronounced "bessies", a.k.a. home batteries) by simulating their expected savings for _your_ household. 
 
 By providing your own household load profile and some BESS configurations that you are interested in, this tool shows 
-1. how those batteries would ideally have behaved in your household in that time period
+1. how those batteries would ideally behave in your household in such a time period
 2. how much money they would have saved in that way
 
 ![plots.png](media/plots.png)
