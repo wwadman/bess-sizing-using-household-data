@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import argparse
 import pandas as pd
 
 from src.batteries.bess_candidates import bess_candidates
@@ -45,9 +46,17 @@ def main(csv_folder: str):
     plot_interactive_bess_behavior(bess_behavior, savings_stats, days=10)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="BESS Compare simulation script")
+    parser.add_argument(
+        "--csv_folder", 
+        type=str, 
+        default="example_household_load_profile_csvs",
+        help="Path to the folder containing your household load profile CSVs (default: example_household_load_profile_csvs)"
+    )
+    args = parser.parse_args()
+
     # Print simulation start time
     print(f"Simulation started at {pd.Timestamp.now()}")
-    main(csv_folder="example_household_load_profile_csvs")
-    # main(csv_folder="your_household_load_profile_csvs") # Point to your own households csv
+    main(csv_folder=args.csv_folder)
     # Print simulation end time
     print(f"Simulation ended at {pd.Timestamp.now()}")

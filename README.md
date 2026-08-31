@@ -39,9 +39,9 @@ BESS.nl's tool is great for finding the best BESS configuration for your househo
    ```
 4. Get your Tibber (household load profile) data using this [this tibber-export repo](https://codeberg.org/marians/tibber-export) and put the monthly CSVs in the `csv/` folder.
 5. Add the battery configurations you want to compare to `src/batteries/bess_candidates.py`
-6. Run your own simulation:
+6. Run your own simulation by specifying the folder with your CSVs:
    ```bash
-   python main.py
+   python main.py --csv_folder csv
    ```
  
 ## Notes
