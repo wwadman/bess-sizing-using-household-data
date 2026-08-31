@@ -22,9 +22,6 @@ This will give you a good idea of which BESS is the best fit for your household 
 #### Why not just use the tool on https://jeroen.nl/energie/opslaan/thuisbatterij/capaciteit-berekenen?
 Jeroen's tool serves as a great first step for finding the battery capacity that's roughly ideal for your household. 
 In contrast, this tool serves as a great second step for picking from some specific BESS configurations with such capacity.
-
-#### Why not just use the tool on https://www.bess.nl/batterijen/capaciteit-berekenen?
-BESS.nl's tool is great for finding the best BESS configuration for your household,
   
 ## Setup and usage
 
@@ -55,4 +52,4 @@ BESS.nl's tool is great for finding the best BESS configuration for your househo
 - The battery minimizes the household's energy bill every day right after 13:00 (when tomorrow's prices are known) by scheduling charging and discharging for the next 24 hours.
   - It uses linear programming to optimize this schedule.
   - To estimate the expected household load profile for the next 24 hours, it uses a moving average of the last 4 weeks (same hour of the week, so each average is over 4 data points).
-- Currently, [DoD](https://en.wikipedia.org/wiki/Depth_of_discharge) is not modelled, hence the somewhat optimistic results in the example. Would you like to help improve this by becoming a contributor? :D
+- Currently, [DoD](https://en.wikipedia.org/wiki/Depth_of_discharge) is not modeled, hence the somewhat optimistic results in the example. Would you like to help improve this by becoming a contributor? :D
