@@ -1,8 +1,8 @@
 # BESS Compare
 
-Compare any number of [Battery Energy Storage Systems](https://en.wikipedia.org/wiki/Battery_energy_storage_system) (BESSes, pronounced "bessies", a.k.a. home batteries) by simulating their expected savings for _your_ household. 
+Compare any number of [Battery Energy Storage Systems](https://en.wikipedia.org/wiki/Battery_energy_storage_system) (BESS, a.k.a. home battery) configurations by simulating their expected savings for _your_ household. 
 
-By providing your own household load profile and some BESS configurations that you are interested in, this tool shows 
+By providing your own household load profile and some BESS configs that you are interested in, this tool shows 
 1. how those batteries would ideally behave in your household in such a time period
 2. how much money they would have saved in that way
 
@@ -21,7 +21,7 @@ This will give you a good idea of which BESS is the best fit for your household 
 ## FAQ
 #### Why not just use [Jeroen's tool](https://jeroen.nl/energie/opslaan/thuisbatterij/capaciteit-berekenen)?
 Jeroen's tool serves as a great first step for finding the battery capacity that's roughly ideal for your household. 
-In contrast, this tool serves as a great second step for picking from some specific BESS configurations with such capacity.
+In contrast, this tool serves as a great second step for picking from some specific BESS configs with such capacity.
 
 #### What is a good starting point for finding the specs of candidate BESSes?
 [Complete Thuisbatterij Vergelijker](https://energienerds.nl/index.php/2025/08/26/stekkerbatterijen-de-startgids) on Energienerds.nl could be your friend.
@@ -38,7 +38,7 @@ In contrast, this tool serves as a great second step for picking from some speci
    python main.py
    ```
 4. Get your (at least 1 year of) Tibber household load profile data using this [this tibber-export repo](https://codeberg.org/marians/tibber-export) and put the monthly CSVs in the `csv/` folder.
-5. Add the battery configurations you want to compare to `src/batteries/bess_candidates.py`
+5. Add the battery configs you want to compare to `src/batteries/bess_candidates.py`
 6. Run your own simulation by specifying the folder with your CSVs:
    ```bash
    python main.py --csv_folder csv
