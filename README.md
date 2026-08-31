@@ -45,13 +45,13 @@ In contrast, this tool serves as a great second step for picking from some speci
    ```
  
 ## Notes
-- 'net' means 'after potential taxes and fees' (not 'grid')
+- 'net' means 'after taxes and fees' (not 'grid')
 
 ### Assumptions
 - You have at least 1 year of household load profile data from a dynamical electricity contract with hourly/quarterly prices. 
   - Currently Tibber is supported, but other providers can be added.
   - At least one year of household load profile data is required to accurately estimate your future energy bill.
-- The Dutch salderingsregeling is abolished.
+- The Dutch [salderingsregeling](https://www.rijksoverheid.nl/themas/klimaat-milieu-en-natuur/energie-thuis/salderingsregeling) is abolished.
 - The battery minimizes the household's energy bill every day right after 13:00 (when tomorrow's prices are known) by scheduling charging and discharging for the next 24 hours.
   - A linear programming optimizes this schedule.
   - The expected household load profile for the next 24 hours is estimated by a moving average of the last 4 weeks (same hour of the week, so each average is over 4 data points).
