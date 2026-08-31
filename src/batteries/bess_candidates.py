@@ -38,7 +38,7 @@ bess_candidates += BessType(
 # Based on https://energienerds.nl/index.php/2026/05/08/zendure-solarflow-mix-review#prijs
 # Consulted June 7, 2026
 
-# Something simple for debugging (nonsense values)
-bess_candidates = BessType(name=f'TEST TEST Awesome battery', extension_name='Android 17',
-                            capacities=[7 * (i + 1) for i in range(2)], charging_rates=[3.5] * 2, rtes=[.835] * 2,
-                            prices=[2499 + 1699 * i for i in range(2)]).get_all_possible_besses_of_this_type()
+# # Something simple for debugging (nonsense values)
+# bess_candidates = BessType(name=f'TEST TEST Awesome battery', extension_name='Android 17',
+#                             capacities=[7 * (i + 1) for i in range(2)], charging_rates=[3.5] * 2, rtes=[.835] * 2,
+#                             prices=[2499 + 1699 * i for i in range(2)]).get_all_possible_besses_of_this_type()

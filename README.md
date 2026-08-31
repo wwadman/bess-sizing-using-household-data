@@ -34,7 +34,7 @@ In contrast, this tool serves as a great second step for picking from some speci
    ```bash
    python main.py
    ```
-4. Get your Tibber (household load profile) data using this [this tibber-export repo](https://codeberg.org/marians/tibber-export) and put the monthly CSVs in the `csv/` folder.
+4. Get your (at least 1 year of) Tibber household load profile data using this [this tibber-export repo](https://codeberg.org/marians/tibber-export) and put the monthly CSVs in the `csv/` folder.
 5. Add the battery configurations you want to compare to `src/batteries/bess_candidates.py`
 6. Run your own simulation by specifying the folder with your CSVs:
    ```bash
