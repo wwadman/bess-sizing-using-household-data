@@ -6,7 +6,7 @@ By providing your own household load profile and some BESS configs that you are 
 1. how those batteries would ideally behave in your household in such a time period
 2. how much money they would have saved in that way
 
-![multiplot.png](media/multiplot.png)
+![plot.png](media/plot.png)
 
 At the top you can select any BESS config, 
 and the drop down menu itself shows some stats like payback period for each BESS, 
