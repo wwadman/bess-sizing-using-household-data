@@ -56,6 +56,10 @@ In contrast, this tool serves as a great second step for picking from some speci
   - A linear programming optimizes this schedule.
   - The expected household load profile for the next 24 hours is estimated by a moving average of the last 4 weeks (same hour of the week, so each average is over 4 data points).
   - Admittedly, most batteries in real life can operate in many other operational modes. This simulation only uses one that aims to minimize the expected energy bill. The current code structure can quite easily incorporate other modes.** 
-- Currently, [DoD](https://en.wikipedia.org/wiki/Depth_of_discharge) is not modeled (yet**), hence the somewhat optimistic results in the results of the example simulation.
+- Currently not modeled (yet**):
+  - [DoD](https://en.wikipedia.org/wiki/Depth_of_discharge)
+  - Idle consumption of the battery
+  - Imperfect coverage of self-consumption within each timestep (the battery's reaction on realtime usage has some lag)
+Hence the somewhat optimistic results in the results of the example simulation.
 
 **Would you like to help improve this by becoming a contributor? :D
